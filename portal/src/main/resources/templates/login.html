@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8"/>
+<title>new-pay Portal 登入</title>
+<link rel="stylesheet" href="/css/portal.css"/>
+<script src="/js/jquery.min.js"></script>
+</head>
+<body>
+<div class="topbar">new-pay Portal</div>
+<div class="wrap">
+  <div class="box" style="width:300px;margin:60px auto;">
+    <h3>登入</h3>
+    <form method="post" action="/doLogin">
+      <p>帳號 <input type="text" name="username" id="username"/></p>
+      <p>密碼 <input type="password" name="password"/></p>
+      <p><button type="submit">登入</button></p>
+      <p class="note" th:if="${err}" th:text="${err}"></p>
+      <p class="note">測試帳號: sa/sa (SA Portal), cp/cp (Merchant Portal), csr/csr (CSR Portal)</p>
+    </form>
+  </div>
+</div>
+<script>
+$(function(){ $('#username').focus(); });
+</script>
+</body>
+</html>

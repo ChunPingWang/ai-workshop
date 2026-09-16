@@ -1,0 +1,8 @@
+target/
+data/
+*.log
+nohup.out
+.DS_Store
+
+# 原始 Word 文件不入版控
+*.doc

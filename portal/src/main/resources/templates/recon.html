@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8"/>
+<title>GPS 對帳結果查詢</title>
+<link rel="stylesheet" href="/css/portal.css"/>
+<script src="/js/jquery.min.js"></script>
+</head>
+<body>
+<div class="topbar">new-pay Portal | <span th:text="${user}">?</span>
+  <a href="/">首頁</a><a href="/report?type=trans">交易報表</a><a href="/report?type=refund">退款報表</a><a href="/recon">對帳查詢</a><a href="/tos">服務條款</a><a href="/bankacc">銀行帳戶</a><a href="/csr">CSR查詢</a><a href="/logout">登出</a>
+</div>
+<div class="wrap">
+  <h3>GPS 對帳結果查詢 (SA Portal)</h3>
+  <div class="box">
+    類型 <select id="type">
+      <option value="daily">每日對帳 (4.6.3)</option>
+      <option value="monthly">每月對帳 (4.6.4)</option>
+    </select>
+    區間(起) <input type="text" id="from" size="8" value="20000101"/>
+    區間(迄) <input type="text" id="to" size="8" value="20991231"/>
+    <button id="btnQuery">查詢</button>
+    <br/><span class="note">畫面註記：要看完整的交易資料，需在二天後，例如要看1/1的對帳資料，要在1/3才能查詢得到</span>
+  </div>
+  <div id="result" class="box">請輸入條件查詢</div>
+  <div class="box">
+    差異明細查詢 RECON_ID <input type="text" id="reconId" size="12" placeholder="R20260915"/>
+    <button id="btnDetail">查差異明細</button>
+  </div>
+  <div id="detail" class="box"></div>
+</div>
+<script>
+$(function(){
+  $('#btnQuery').click(function(){
+    $('#result').html('查詢中...');
+    $.get('/recon/data', { type: $('#type').val(), from: $('#from').val(), to: $('#to').val() }, function(data){
+      $('#result').html(data);
+    });
+  });
+  $('#btnDetail').click(function(){
+    $('#detail').html('查詢中...');
+    $.get('/recon/detail', { reconId: $('#reconId').val() }, function(data){
+      $('#detail').html(data);
+    });
+  });
+});
+</script>
+</body>
+</html>

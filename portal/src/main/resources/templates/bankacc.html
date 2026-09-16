@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8"/>
+<title>商家銀行帳戶註冊</title>
+<link rel="stylesheet" href="/css/portal.css"/>
+<script src="/js/jquery.min.js"></script>
+</head>
+<body>
+<div class="topbar">new-pay Portal | <span th:text="${user}">?</span>
+  <a href="/">首頁</a><a href="/report?type=trans">交易報表</a><a href="/report?type=refund">退款報表</a><a href="/recon">對帳查詢</a><a href="/tos">服務條款</a><a href="/bankacc">銀行帳戶</a><a href="/csr">CSR查詢</a><a href="/logout">登出</a>
+</div>
+<div class="wrap">
+  <h3>商家銀行帳戶註冊 (CP Portal, FSD 4.6.6)</h3>
+  <div class="box">
+    商家代碼 <input type="text" id="merchantId" size="10" value="E000001"/>
+    銀行代碼 <input type="text" id="bankCode" size="4"/>
+    銀行帳號 <input type="text" id="bankAcc" size="16"/>
+    匯款幣別 <select id="currency">
+      <option value="NTD">新台幣(NTD)</option>
+      <option value="USD">美金(USD)</option>
+    </select>
+    <label><input type="checkbox" id="foreign"/> 外國銀行</label>
+    <button id="btnSave">註冊</button>
+    <span id="msg" class="note"></span>
+    <br/><span class="note">送出後由 Finance 於 SA Portal 審核 (4.6.7 審核作業尚未提供, 狀態先掛 W)</span>
+  </div>
+  <div class="box">
+    <button id="btnList">查詢已註冊帳戶</button>
+    <div id="list"></div>
+  </div>
+</div>
+<script>
+$(function(){
+  $('#btnSave').click(function(){
+    $.post('/bankacc/save', {
+      merchantId: $('#merchantId').val(), bankCode: $('#bankCode').val(), bankAcc: $('#bankAcc').val(),
+      currency: $('#currency').val(), isDomestic: $('#foreign').is(':checked') ? 'N' : 'Y'
+    }, function(r){
+      $('#msg').text(r);
+      $('#btnList').click();
+    });
+  });
+  $('#btnList').click(function(){
+    $.get('/bankacc/data', { merchantId: $('#merchantId').val() }, function(data){
+      var list = data;
+      if (typeof list == 'string') list = JSON.parse(data);
+      var h = '<table><tr><th>商家<\/th><th>銀行代碼<\/th><th>帳號<\/th><th>幣別<\/th><th>國內外<\/th><th>狀態<\/th><\/tr>';
+      for (var i = 0; i < list.length; i++) {
+        h += '<tr><td>' + list[i].MERCHANT_ID + '<\/td><td>' + list[i].BANK_CODE + '<\/td><td>' + list[i].BANK_ACC
+          + '<\/td><td>' + list[i].CURRENCY + '<\/td><td>' + (list[i].IS_DOMESTIC == 'Y' ? '國內' : '國外')
+          + '<\/td><td>' + list[i].STATUS + '<\/td><\/tr>';
+      }
+      h += '<\/table>';
+      $('#list').html(h);
+    });
+  });
+});
+</script>
+</body>
+</html>
