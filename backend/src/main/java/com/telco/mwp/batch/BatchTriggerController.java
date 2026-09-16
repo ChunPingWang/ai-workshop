@@ -13,29 +13,29 @@ import org.springframework.web.bind.annotation.RestController;
 public class BatchTriggerController {
 
     @Autowired
-    private GpsBatchJobs jobs;
+    private OlsBatchJobs jobs;
 
     @GetMapping("/batch/run")
     public String run(@RequestParam String job) {
         long t0 = System.currentTimeMillis();
         try {
-            if ("getGPSRequest".equals(job)) jobs.getGPSRequest();
-            else if ("processGPSReqFiles".equals(job)) jobs.processGPSReqFiles();
-            else if ("buildGPSResFiles".equals(job)) jobs.buildGPSResFiles();
-            else if ("putGPSResponse".equals(job)) jobs.putGPSResponse();
+            if ("getOLSRequest".equals(job)) jobs.getOLSRequest();
+            else if ("processOLSReqFiles".equals(job)) jobs.processOLSReqFiles();
+            else if ("buildOLSResFiles".equals(job)) jobs.buildOLSResFiles();
+            else if ("putOLSResponse".equals(job)) jobs.putOLSResponse();
             else if ("buildDeductionCSPFile".equals(job)) jobs.buildDeductionCSPFile();
-            else if ("gpsChargeMonitor".equals(job)) jobs.gpsChargeMonitor();
-            else if ("reconGPSDaily".equals(job)) jobs.reconGPSDaily();
-            else if ("reconGPSMonthly".equals(job)) jobs.reconGPSMonthly();
-            else if ("reconGPSSummary".equals(job)) jobs.reconGPSSummary();
+            else if ("olsChargeMonitor".equals(job)) jobs.olsChargeMonitor();
+            else if ("reconOLSDaily".equals(job)) jobs.reconOLSDaily();
+            else if ("reconOLSMonthly".equals(job)) jobs.reconOLSMonthly();
+            else if ("reconOLSSummary".equals(job)) jobs.reconOLSSummary();
             else if ("all".equals(job)) {
                 // 照順序全部跑一輪
-                jobs.getGPSRequest();
-                jobs.processGPSReqFiles();
-                jobs.buildGPSResFiles();
-                jobs.putGPSResponse();
+                jobs.getOLSRequest();
+                jobs.processOLSReqFiles();
+                jobs.buildOLSResFiles();
+                jobs.putOLSResponse();
                 jobs.buildDeductionCSPFile();
-                jobs.gpsChargeMonitor();
+                jobs.olsChargeMonitor();
             } else {
                 return "unknown job: " + job;
             }

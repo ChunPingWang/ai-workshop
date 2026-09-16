@@ -16,7 +16,7 @@
 | Revision Number | Revision Date | Summary of Changes | Changes Marker |
 |---|---|---|---|
 | 1 | 2013/04/03 | 日/月對帳rule調整->不需考慮日光節約時間、檔案遇到跨天/跨月對帳若不一致一律發alert(4.2.5.3、4.2.6.3) | [人員B] |
-| 2 | 2013/04/03 | cancelGPSTransaction API design (4.4.6) | [人員B] |
+| 2 | 2013/04/03 | cancelOLSTransaction API design (4.4.6) | [人員B] |
 | 3 | 2013/04/05 | DB Table naming 異動(4.8.1 & 4.8.13) | [人員B] |
 | 4 | 2013/04/05 | Physical Architecture(2.2) | [人員C] |
 | 5 | 2013/04/05 | Traffic Pattern(2.3) | [人員C] |
@@ -34,14 +34,14 @@
 
 ## 2.1. Key Component Diagram and Integration Flow
 
-The new-pay GPS Project will follow the transaction flow and framework defined by OLS to perform the transaction integration with OLS. (association/provision/Auth/Charging/Cancel/Refund/Reconciliation/MonthlyInvoice).
+The new-pay OLS Project will follow the transaction flow and framework defined by OLS to perform the transaction integration with OLS. (association/provision/Auth/Charging/Cancel/Refund/Reconciliation/MonthlyInvoice).
 
 ```mermaid
 flowchart LR
     U["電信業者用戶 (Device)"]
     S["簡訊中心(SMSC)"]
     N["new-pay"]
-    G["OLS (GPS / DCB servers)"]
+    G["OLS (OLS / DCB servers)"]
     U -->|"1. Association: 向OLS取SUT後以簡訊傳送"| S
     S -->|"MO event"| N
     N -->|"1. Association: 呼叫Carrier Billing API"| G
@@ -54,17 +54,17 @@ flowchart LR
 ```
 
 
-1. Association: 當電信業者用戶第一次使用電信業者電信帳單在OnlineStore(GPS)購買商品時，需要先進行Asscoication的動作，將電信業者電信帳單和OLS帳號進行綁定. 電信業者用戶在Device上點選電信業者電信帳單作為付款方式，Device會向OLS索取SUT(Store User Token)。在取到SUT後，將SUT以簡訊方式傳送給電信業者簡訊中心(SMSC). new-pay新增一MO event listener來處理由簡訊中心來的MO event, 並呼叫Carrier Billing API完成Association
+1. Association: 當電信業者用戶第一次使用電信業者電信帳單在OnlineStore(OLS)購買商品時，需要先進行Asscoication的動作，將電信業者電信帳單和OLS帳號進行綁定. 電信業者用戶在Device上點選電信業者電信帳單作為付款方式，Device會向OLS索取SUT(Store User Token)。在取到SUT後，將SUT以簡訊方式傳送給電信業者簡訊中心(SMSC). new-pay新增一MO event listener來處理由簡訊中心來的MO event, 並呼叫Carrier Billing API完成Association
 
-2. Provision: 在交易之前，GPS仍然需要向電信業者驗證使用者是否能使用電信帳單付費，new-pay提供getProvisioning WebService 供OLS呼叫，以進行資料認證。
+2. Provision: 在交易之前，OLS仍然需要向電信業者驗證使用者是否能使用電信帳單付費，new-pay提供getProvisioning WebService 供OLS呼叫，以進行資料認證。
 
 3. 因應OnlineStore的需求，new-pay系統需新增一種單次Auth批次Deduct的交易模式。
-   1. 當用戶在GPS選好商品，並決定購買後，GPS會要求用戶輸入密碼，在確認密碼無誤後，GPS為二階段交易，首先會呼叫new-pay提供的Auth WebService進行付費驗證, 即完成第一階段交易，而該交易流程狀態為A(=MWP_PAY_TRANS.TX_STATUS)，new-pay系統會將該筆交易所有資訊存入資料庫，等待交易的第二階段開始。
-   2. 在GPS交易第二階段為Batch Charge/Cancel/Refund , OLS會產出交易清單，提供new-pay以sftp加密方式下載。new-pay系統下載後，則以批次程式進行Charge/Cancel/Refund，完成全部交易，再定時把response檔案抛回指定的FTP路徑, 該交易流程完成狀態為D(=MWP_PAY_TRANS.TX_STATUS)。
+   1. 當用戶在OLS選好商品，並決定購買後，OLS會要求用戶輸入密碼，在確認密碼無誤後，OLS為二階段交易，首先會呼叫new-pay提供的Auth WebService進行付費驗證, 即完成第一階段交易，而該交易流程狀態為A(=MWP_PAY_TRANS.TX_STATUS)，new-pay系統會將該筆交易所有資訊存入資料庫，等待交易的第二階段開始。
+   2. 在OLS交易第二階段為Batch Charge/Cancel/Refund , OLS會產出交易清單，提供new-pay以sftp加密方式下載。new-pay系統下載後，則以批次程式進行Charge/Cancel/Refund，完成全部交易，再定時把response檔案抛回指定的FTP路徑, 該交易流程完成狀態為D(=MWP_PAY_TRANS.TX_STATUS)。
 
-4. OLS每天會提供電信業者前一日的交易資料以供對帳(Reconciliation)， new-pay可比對雙方的交易以確保雙方交易資料一致，GPS抛來的資料包括前一日的交易request及response內容。
+4. OLS每天會提供電信業者前一日的交易資料以供對帳(Reconciliation)， new-pay可比對雙方的交易以確保雙方交易資料一致，OLS抛來的資料包括前一日的交易request及response內容。
 
-5. OLS每天會提供電信業者前一月的交易明細資料以供拆帳(Settlement)， new-pay可比對雙方的交易以確保雙方交易資料一致，GPS抛來的資料包括前一月的銷售及退款資料。
+5. OLS每天會提供電信業者前一月的交易明細資料以供拆帳(Settlement)， new-pay可比對雙方的交易以確保雙方交易資料一致，OLS抛來的資料包括前一月的銷售及退款資料。
 
 6. OLS每天會提供電信業者前一月的交易對帳總表， new-pay至FTP抓取後存放於指定Folder，以供User下載。
 
@@ -95,13 +95,13 @@ Proxy Server OS Partitioning Design Spec:
 
 Proxy Server Floor Plan:
 
-The production/Staging GPS Proxy Servers will be on the X20 rack, and the servers will connect to the L4 switch on I02 via the panel on I01. For the NBU server connection, the traffic will be connected to V08 via the panel on X19.
+The production/Staging OLS Proxy Servers will be on the X20 rack, and the servers will connect to the L4 switch on I02 via the panel on I01. For the NBU server connection, the traffic will be connected to V08 via the panel on X19.
 
 IP Survey Table for the new Proxy Servers:
 
 TBD
 
-## 2.3. Key new-pay GPS Traffic Pattern
+## 2.3. Key new-pay OLS Traffic Pattern
 
 ### Association Traffic:
 
@@ -147,11 +147,11 @@ sequenceDiagram
 
 ### SFTP File Fetching Traffic:
 
-The GPS file fetching batch will SFTP to OLS DCB servers to fetch the charging/refund/cancel/reconciliation/monthlyInvoice files back and process those encrypted files with the predefined PGP keys to make the files transform into proper format for the following new-pay system logic processing.
+The OLS file fetching batch will SFTP to OLS DCB servers to fetch the charging/refund/cancel/reconciliation/monthlyInvoice files back and process those encrypted files with the predefined PGP keys to make the files transform into proper format for the following new-pay system logic processing.
 
 ```mermaid
 flowchart LR
-    B["GPS file fetching batch (new-pay Batch Server)"] -->|"SFTP"| G["OLS DCB servers"]
+    B["OLS file fetching batch (new-pay Batch Server)"] -->|"SFTP"| G["OLS DCB servers"]
     G -->|"charging/refund/cancel/reconciliation/monthlyInvoice files (PGP加密)"| B
     B --> P["以predefined PGP keys處理加密檔案, 轉換格式供後續new-pay系統邏輯處理"]
 ```
@@ -183,29 +183,29 @@ new-pay提供SDK供電信業者商家(CP)使用，包括儲值繳費、四大Sto
 
 如圖所示，在本案中，將調整原有的API架構為三層，分別為：
 
-1. Processor APIs：與交易相關的API，將訂定為不同的Processor，比如本案中的與OnlineStore的整合，即是一個新的交易模式，故獨立為一個新的Processor(GPS Processor)。Processor中利用State Pattern控管交易的流程與狀況，若需要進行Authorize或Deduct等動作，則是呼叫Service APIs這層的API進行(詳情請參看後續章節的說明)。
+1. Processor APIs：與交易相關的API，將訂定為不同的Processor，比如本案中的與OnlineStore的整合，即是一個新的交易模式，故獨立為一個新的Processor(OLS Processor)。Processor中利用State Pattern控管交易的流程與狀況，若需要進行Authorize或Deduct等動作，則是呼叫Service APIs這層的API進行(詳情請參看後續章節的說明)。
 
-2. Service APIs：因應不同的交易及資訊存取需求，提供各式各樣的API供外部系統取用，以GPS Processor為例，其交易行為包括Initial(get TXID)、Authorize Purchase及Deduct，這行為在Service APIs層為各自獨立的API，未來若有其他的Processor，也可重覆使用，減少重覆撰寫API的狀況發生。
+2. Service APIs：因應不同的交易及資訊存取需求，提供各式各樣的API供外部系統取用，以OLS Processor為例，其交易行為包括Initial(get TXID)、Authorize Purchase及Deduct，這行為在Service APIs層為各自獨立的API，未來若有其他的Processor，也可重覆使用，減少重覆撰寫API的狀況發生。
 
 3. Commands：在各個Service API中，也會有重覆使用的元件，例如驗證Acc ID是否存在？TX ID是否重覆？這些元件在Commands層被獨立成一個個單獨的method，供API使用。
 
-## 4.1.3. GPS Processor
+## 4.1.3. OLS Processor
 
-目前new-pay系統肩負電信業者多項付費及訂閱機制，除界接電信業者四大Store，2013年起亦將陸續與OLS及其他國際電商進行整合。放眼未來，new-pay將會有更多樣、更彈性的付款方式及流程，因應此趨勢，為提升系統開發的速度及彈性，將依據本案之需求，提前進行revamp的規則，設計GPSProcessor以處理GPS相關的交易需求及控管交易流程。
+目前new-pay系統肩負電信業者多項付費及訂閱機制，除界接電信業者四大Store，2013年起亦將陸續與OLS及其他國際電商進行整合。放眼未來，new-pay將會有更多樣、更彈性的付款方式及流程，因應此趨勢，為提升系統開發的速度及彈性，將依據本案之需求，提前進行revamp的規則，設計OLSProcessor以處理OLS相關的交易需求及控管交易流程。
 
-下圖為GPSProcessor關連物件圖，說明請參見以下各節：
+下圖為OLSProcessor關連物件圖，說明請參見以下各節：
 
-### Processor & GPS Processor
+### Processor & OLS Processor
 
 設計Processor的目的，在統整new-pay的交易過程，將交易過程中各個交易階段拆解並將對應的交易行為標準化，以建置可重覆使用的模組，以利日後管理及擴充。
 
-如下圖所示，在Processor中，明確定義了一個交易的流程(Processor)會有那些標準行為，如init、auth等。依據GPS的交易特性，繼承Processor建立了GPSProcessor，GPSProcessor只需針對與標準行為不同的行為進行客製即可。
+如下圖所示，在Processor中，明確定義了一個交易的流程(Processor)會有那些標準行為，如init、auth等。依據OLS的交易特性，繼承Processor建立了OLSProcessor，OLSProcessor只需針對與標準行為不同的行為進行客製即可。
 
 未來OneClickDeduction如果要使用Processor的方式做revamp，也是繼承Proccessor class，並針對init、auth等method進行overwrite即可。
 
-依Processor的設計，當new-pay收到一個交易需求(如deduct)，需先呼叫ProcessorFactory.getInstance，Factory依其交易特性產生對應的Processor(如GPSProcessor)，再將交易資料傳入GPSProcessor定義的行為(GPSProcessor.deduct())，即可以進行交易動作。
+依Processor的設計，當new-pay收到一個交易需求(如deduct)，需先呼叫ProcessorFactory.getInstance，Factory依其交易特性產生對應的Processor(如OLSProcessor)，再將交易資料傳入OLSProcessor定義的行為(OLSProcessor.deduct())，即可以進行交易動作。
 
-目前儘有OnlineStore在使用Processor的架構，故getInstance時直接判定為GPSProcessor。
+目前儘有OnlineStore在使用Processor的架構，故getInstance時直接判定為OLSProcessor。
 
 ### State Pattern for OnlineStore交易
 
@@ -220,33 +220,33 @@ new-pay 系統交易/訂閱流程共同的狀態變化如下表/圖所示：
 | 3 | F (Fail) | 錯誤狀態 | 任何操作發生錯誤，則會進入錯誤狀態 |
 | 4 | A (Auth) | 授權/認證成功狀態 | |
 | 5 | D (Deduct Done) | 交易完成狀態 | 已經完成交易/訂閱後，則會進入交易完成狀態 |
-| 6 | OR (Order Reversal) | 交易註銷 | 交易完成後一小時內CP 可以要求交易註銷(Reversal)，GPS未使用此狀態。 |
+| 6 | OR (Order Reversal) | 交易註銷 | 交易完成後一小時內CP 可以要求交易註銷(Reversal)，OLS未使用此狀態。 |
 | 7 | F (for Cancel) | 交易取消 | Two Phase Commit 交易，未請款前CP要求取消已授權交易，Return Code為Request Cancel |
 | 8 | Refund | 交易退款 | 交易成功後，進行退款且成功 |
 
 下圖為依據State Pattern設計出來的State物件群，在最上層有一個State Interface，定義了每個State可能的行為，並依上表所列各種State進行實作。
 
-以AuthState為例，若某筆交易在進行GPSProcess時的Status為A(Auth)，在做完deduct成功之後，其Status應變更成D(Deduct Done)，則在GPSProcessor，變更Status的寫法應為：
+以AuthState為例，若某筆交易在進行OLSProcess時的Status為A(Auth)，在做完deduct成功之後，其Status應變更成D(Deduct Done)，則在OLSProcessor，變更Status的寫法應為：
 
 ```java
 public void deduct(TX transaction) {
-  DeductUtil gpsDeduct = new GPSDeductUtil(); //產生deduct交易物件
-  UtilResult result = gpsDeduct.exec(transaction); //抛入交易資訊進行deduct
+  DeductUtil olsDeduct = new OLSDeductUtil(); //產生deduct交易物件
+  UtilResult result = olsDeduct.exec(transaction); //抛入交易資訊進行deduct
   if("SUCCESS".equals(result.getReturnCode())) //若交易成功，應更新狀態為D
    this.state.deduct(transaction);
    /*呼叫state中的deduct，將state變為DeductState，原本為AuthState*/
    /*由state.deduct()來處理status的變更 */
   else //若交易失敗，狀態為F
    this.setState(this.failState);
-  this.state.updateDB(transaction); //統一由GPSProcessor回寫DB
+  this.state.updateDB(transaction); //統一由OLSProcessor回寫DB
  }
 ```
 
-下圖為GPSProcessor中各種State的變化及合法行為：
+下圖為OLSProcessor中各種State的變化及合法行為：
 
 ### Processor、Service及Command
 
-依據 4.1.2.2所述，GPSProcess的架構分為Processor、Server及Command三層，其對應的class如下圖所示：
+依據 4.1.2.2所述，OLSProcess的架構分為Processor、Server及Command三層，其對應的class如下圖所示：
 
 註：由於Service這個package name已被其他功能使用，故圖中的Util指的就是規劃中的Service層。
 
@@ -254,20 +254,20 @@ public void deduct(TX transaction) {
 
 2. Service(Util)：提供method供Porcessor實行交易中各種不同的行為，並因應後端commad處理結果，回傳訊息。
 
-3. Command：重覆使用的元件，包括驗證及檢查等，如GPSAuth中要做的ValidateGSPStatus及ValidateUserPaidType。
+3. Command：重覆使用的元件，包括驗證及檢查等，如OLSAuth中要做的ValidateOSLStatus及ValidateUserPaidType。
 
-GPSProcessor中使用的Service(Util)及Command請參見下表：
+OLSProcessor中使用的Service(Util)及Command請參見下表：
 
-| Service | Command | DB updated by GPSProcessor | Remark |
+| Service | Command | DB updated by OLSProcessor | Remark |
 |---|---|---|---|
-| GPSProcessor.auth | ValidateGSPStatusCmd | Update MWP_PAY_TRANS.status -> A | |
+| OLSProcessor.auth | ValidateOSLStatusCmd | Update MWP_PAY_TRANS.status -> A | |
 | | ValidateUserPaidTypeCmd | | |
-| GPSProcessor.deduct | | Update MWP_PAY_TRANS.status -> D | Return SUCCESS directly |
-| | | Update MWP_GPS_REQ_DETAIL | |
+| OLSProcessor.deduct | | Update MWP_PAY_TRANS.status -> D | Return SUCCESS directly |
+| | | Update MWP_OLS_REQ_DETAIL | |
 | | | Update MWP_BATCH_DEDUCTION_DETAIL | |
-| GPSProcessor.cancel | | Update MWP_PAY_TRANS.status -> F (Request Cancelled) | Return FAIL directly |
-| | | Update MWP_GPS_REQ_DETAIL | |
-| GPSProcessor.refund | N/A | Update MWP_GPS_REQ_DETAIL | Call existing API: refundTransaction |
+| OLSProcessor.cancel | | Update MWP_PAY_TRANS.status -> F (Request Cancelled) | Return FAIL directly |
+| | | Update MWP_OLS_REQ_DETAIL | |
+| OLSProcessor.refund | N/A | Update MWP_OLS_REQ_DETAIL | Call existing API: refundTransaction |
 
 ### Sequence for Auth
 
@@ -275,13 +275,13 @@ GPSProcessor中使用的Service(Util)及Command請參見下表：
 sequenceDiagram
     participant CL as Caller
     participant PF as ProcessorFactory
-    participant GP as GPSProcessor
+    participant GP as OLSProcessor
     participant CMD as Commands
     participant DB as MWP_PAY_TRANS
     CL->>PF: getInstance
-    PF-->>CL: GPSProcessor
+    PF-->>CL: OLSProcessor
     CL->>GP: auth(transaction)
-    GP->>CMD: ValidateGSPStatusCmd
+    GP->>CMD: ValidateOSLStatusCmd
     GP->>CMD: ValidateUserPaidTypeCmd
     GP->>DB: Update MWP_PAY_TRANS.status -> A
 ```
@@ -292,8 +292,8 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant CL as Caller
-    participant GP as GPSProcessor
-    participant UT as GPSDeductUtil (Service/Util)
+    participant GP as OLSProcessor
+    participant UT as OLSDeductUtil (Service/Util)
     participant ST as State
     participant DB as DB (DAO)
     CL->>GP: deduct(transaction)
@@ -302,13 +302,13 @@ sequenceDiagram
     alt returnCode = SUCCESS
         GP->>ST: state.deduct(transaction) AuthState變為DeductState
         GP->>DB: Update MWP_PAY_TRANS.status -> D
-        GP->>DB: Update MWP_GPS_REQ_DETAIL
+        GP->>DB: Update MWP_OLS_REQ_DETAIL
         GP->>DB: Update MWP_BATCH_DEDUCTION_DETAIL
         Note over GP: Return SUCCESS directly
     else 交易失敗
         GP->>ST: setState(failState) 狀態為F
     end
-    GP->>DB: state.updateDB(transaction) 統一由GPSProcessor回寫DB
+    GP->>DB: state.updateDB(transaction) 統一由OLSProcessor回寫DB
 ```
 
 
@@ -317,12 +317,12 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant CL as Caller
-    participant GP as GPSProcessor
+    participant GP as OLSProcessor
     participant API as refundTransaction (existing API)
     participant DB as DB
     CL->>GP: refund(transaction)
     GP->>API: Call existing API refundTransaction
-    GP->>DB: Update MWP_GPS_REQ_DETAIL
+    GP->>DB: Update MWP_OLS_REQ_DETAIL
 ```
 
 
@@ -331,11 +331,11 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant CL as Caller
-    participant GP as GPSProcessor
+    participant GP as OLSProcessor
     participant DB as DB
     CL->>GP: cancel(transaction)
     GP->>DB: Update MWP_PAY_TRANS.status -> F (Request Cancelled)
-    GP->>DB: Update MWP_GPS_REQ_DETAIL
+    GP->>DB: Update MWP_OLS_REQ_DETAIL
     Note over GP: Return FAIL directly
 ```
 
@@ -353,7 +353,7 @@ sequenceDiagram
 - shell層 新增SOAP GetProvisioning api interface
 - core層 新增provisioning function，邏輯如下 所列
 - 新增SMSC Daemon，用以接聽來自於SMSC的即時訊息
-- 新增呼叫Partner API的程式，傳遞SUT對應的OUT到GPS Server
+- 新增呼叫Partner API的程式，傳遞SUT對應的OUT到OLS Server
 
 Provision Rule:
 
@@ -414,7 +414,7 @@ flowchart LR
 
 與交易流程相關的程式碼，將以 State Design Pattern設計，所有與程序有關的檢核、狀態控管的邏輯，會被封裝於此。未來所有程序會繼承此組interface/abstract class，以達到低耦合與重用的目標。所有business rule 也會分別放在不同的class裡，提供程式維護的安全性。
 
-## 4.3.4. ADD Core ServiceAPI: authorizeGPSPurcharse
+## 4.3.4. ADD Core ServiceAPI: authorizeOLSPurcharse
 
 ### API description
 
@@ -422,7 +422,7 @@ flowchart LR
 
 會跟[人員D]確認每個Command的用途，並提供說明，若有不需要的項目會作刪除
 
-Telco可用GPS交易的rule是
+Telco可用OLS交易的rule是
 
 - 判定Paid Type=8
 - 判定GSM Status是否為active
@@ -481,25 +481,25 @@ I01219900|System errors
 
 ## 4.3.5. ADD Shell: echo
 
-## 4.3.6. ADD Core: cancelGPSTransaction
+## 4.3.6. ADD Core: cancelOLSTransaction
 
 ### API description
 
 - 用戶於Trial Window時間內可以解除安裝已下載的App Content
 - 已經Charge不能Cancel
 - 已經Refund不能 Cancel
-- 需update mwp_pay_trans以及 mwp_gps_req_detail
+- 需update mwp_pay_trans以及 mwp_ols_req_detail
 
-1. 讀取MWP_GPS_BATCH table內容，將type為 Cancel的記錄取出，並將STATUS改為A
+1. 讀取MWP_OLS_BATCH table內容，將type為 Cancel的記錄取出，並將STATUS改為A
 2. 藉由每筆記錄的 CORRELATION_ID欄位資料，對應到相關的TXID，將MWP_PAY_TRANS.TX_STATUS改為 'F'，完成cancel，MWP_PAY_TRANS.return_code="Request Cancel"， MWP_PAY_TRANS.modify_date=sysdate()
-3. 回寫MWP_GPS_BATCH table ，將STATUS改為 D
-4. Update response fileds of MWP_GPS_REQ_DETAIL
+3. 回寫MWP_OLS_BATCH table ，將STATUS改為 D
+4. Update response fileds of MWP_OLS_REQ_DETAIL
 
 ### HTTP URL name
 
 | Protocol | Name |
 |---|---|
-| HTTP | Com.telco.mwp.servlet.CancelGPSTX |
+| HTTP | Com.telco.mwp.servlet.CancelOLSTX |
 
 ### XML Tags Description
 
@@ -599,46 +599,46 @@ Output
 </MWPSDKOutput>
 ```
 
-## 4.3.7. ADD Core: refundGPSTransaction
+## 4.3.7. ADD Core: refundOLSTransaction
 
-1. 讀取MWP_GPS_BATCH table內容，將type為 Refund的記錄取出，並將STATUS改為A
+1. 讀取MWP_OLS_BATCH table內容，將type為 Refund的記錄取出，並將STATUS改為A
 2. 藉由每筆記錄的 CORRELATION_ID欄位資料，對應到相關的TXID
 3. 將該筆交易記錄，進行new-pay Phone Bill 的 Refund程序
-4. 回寫MWP_GPS_BATCH table ，將STATUS改為 D
+4. 回寫MWP_OLS_BATCH table ，將STATUS改為 D
 
 ---
 
 # 4.4. Batch調整
 
-## 4.4.1. ADD: ProcessGPSReqFiles
+## 4.4.1. ADD: ProcessOLSReqFiles
 
 請參考 4.2.4.4節說明。
 
-## 4.4.2. ADD: BuildGPSResFiles
+## 4.4.2. ADD: BuildOLSResFiles
 
 請參考 4.2.4.5節說明。
 
-## 4.4.3. ADD: getGPSRequest
+## 4.4.3. ADD: getOLSRequest
 
 請參考 4.2.4.3節說明。
 
-## 4.4.4. ADD: putGPSResponse
+## 4.4.4. ADD: putOLSResponse
 
 請參考 4.2.4.6節說明。
 
-## 4.4.5. ADD: GPSChargeMonitor
+## 4.4.5. ADD: OLSChargeMonitor
 
 請參考 4.2.4.7節說明。
 
-## 4.4.6. ADD: getGPSReconfiles
+## 4.4.6. ADD: getOLSReconfiles
 
 請參考 4.2.5.2節說明。
 
-## 4.4.7. ADD: getGPSMonthlyInvoice
+## 4.4.7. ADD: getOLSMonthlyInvoice
 
 請參考 4.2.6.2節說明。
 
-## 4.4.8. ADD: reconGPSDaily
+## 4.4.8. ADD: reconOLSDaily
 
 請參考 4.2.5.3節說明。
 
@@ -648,7 +648,7 @@ Output
 - 每日比對交易資料，異常發告警e-mail至指定群組以利人工處理。
 - 異常種類：new-pay報表多於ols報表或ols報表多於new-pay報表
 
-## 4.4.9. ADD: reconGPSMonthly
+## 4.4.9. ADD: reconOLSMonthly
 
 請參考 4.2.6.3節說明。
 
@@ -658,7 +658,7 @@ Output
 - 每月比對交易資料，異常發告警 e-mail至指定群組以利人工處理。
 - 異常種類：new-pay報表多於ols報表或ols報表多於new-pay報表
 
-## 4.4.10. ADD: reconGPSSummary
+## 4.4.10. ADD: reconOLSSummary
 
 請參考 4.2.7節說明。
 
@@ -674,7 +674,7 @@ Output
 
 # 4.7. Schema調整
 
-## 4.7.1. ADD Table: MWP_SMS_GPS
+## 4.7.1. ADD Table: MWP_SMS_OLS
 
 | Column Name | Data Type | Null | Default | Comment | Sample |
 |---|---|---|---|---|---|
@@ -688,7 +688,7 @@ Output
 | Ret_Code | VARCHAR2(16) | | | 00000000:Success 00000001:Nonpostpaid user 00000002:nonCSP 00000003:Request Timeout 00000004:formatError 00000005:DCB Error | |
 | Ret_Description | VARCHAR2(128) | | | | |
 
-## 4.7.2. ADD Table: MWP_GPS_SOAP_Provisioning
+## 4.7.2. ADD Table: MWP_OLS_SOAP_Provisioning
 
 OLS呼叫new-pay getProvisioning所有 Input/Output行為，皆存入此table以便後續查核
 
@@ -697,13 +697,13 @@ OLS呼叫new-pay getProvisioning所有 Input/Output行為，皆存入此table以
 | ID | VARCHAR2(32) | N | | Pkey, | |
 | Create_Time | VARCHAR2(14) | N | | The time which deduction file is conducted. | |
 | Request_XML | VARCHAR2(256) | N | | | |
-| Correlation_ID | VARCHAR2(20) | N | | GPS OrderNo | |
+| Correlation_ID | VARCHAR2(20) | N | | OLS OrderNo | |
 | OUT | VARCHAR2(20) | N | | | |
 | Prov_Result | VARCHAR2(20) | | | | |
 | Is_Provisioned | VARCHAR2(20) | | | | |
 | Resp_XML | VARCHAR2(256) | | | | |
 
-## 4.7.3. ADD Table: MWP_GPS_SOAP_Auth
+## 4.7.3. ADD Table: MWP_OLS_SOAP_Auth
 
 OLS呼叫new-pay auth所有 Input/Output行為，皆存入此table以便後續查核
 
@@ -712,7 +712,7 @@ OLS呼叫new-pay auth所有 Input/Output行為，皆存入此table以便後續�
 | ID | VARCHAR2(32) | N | | Pkey, | |
 | Create_Time | VARCHAR2(14) | N | | The time which deduction file is conducted. | |
 | Request_XML | VARCHAR2(256) | N | | | |
-| Correlation_ID | VARCHAR2(20) | N | | GPS OrderNo | |
+| Correlation_ID | VARCHAR2(20) | N | | OLS OrderNo | |
 | Purchase_Time | VARCHAR2(21) | N | | 存入mwp_pay_trans.auth_dt | |
 | OUT | VARCHAR2(20) | N | | | |
 | Payment_Description | VARCHAR2(128) | N | | | |
@@ -723,9 +723,9 @@ OLS呼叫new-pay auth所有 Input/Output行為，皆存入此table以便後續�
 | Auth_TXID | VARCHAR2(20) | | | | |
 | Resp_XML | VARCHAR2(256) | | | | |
 
-## 4.7.4. ADD Table: MWP_GPS_REQ_LOG
+## 4.7.4. ADD Table: MWP_OLS_REQ_LOG
 
-存GPS Batch RequestFile/ResponseFile Input/Output information
+存OLS Batch RequestFile/ResponseFile Input/Output information
 
 | Column Name | Data Type | Null | Default | Comment | Sample |
 |---|---|---|---|---|---|
@@ -737,13 +737,13 @@ OLS呼叫new-pay auth所有 Input/Output行為，皆存入此table以便後續�
 | RESP_FILE_NAME | VARCHAR2(20) | Y | | The deduction response filename was generated. | |
 | LAST_MOD_TIME | VARCHAR2(14) | N | | The last modified time on the LogRecord | |
 
-## 4.7.5. ADD Table: MWP_GPS_REQ_DETAIL
+## 4.7.5. ADD Table: MWP_OLS_REQ_DETAIL
 
 | Column Name | Data Type | Null | Default | Comment | Sample |
 |---|---|---|---|---|---|
 | REQ_ID | VARCHAR2(32) | N | | pKey, | |
 | REQ_TYPE | VARCHAR2(128) | N | | 交易型態 | |
-| REQ_TIMESTAMP | VARCHAR2(21) | N | | Request recived by GPS | |
+| REQ_TIMESTAMP | VARCHAR2(21) | N | | Request recived by OLS | |
 | CORRELATION_ID | VARCHAR2(64) | N | | | |
 | BILLING_AGREEMENT_ID | VARCHAR2(64) | N | | | |
 | RESP_TIMESTAMP | VARCHAR2(21) | | | Reqponse time processed by new-pay | |
@@ -796,11 +796,11 @@ CP抓到的對帳檔內容會被parsing入Mwp_cp_recon_daily_detail
 | RECON_ID | VARCHAR(20) | N | | pKey | |
 | MERCHANT_ID | VARCHAR2(20) | N | | | |
 | RECON_RESULT_SUMMARY | VARCHAR2(1) | | | 日對帳總結果:Y:對帳正常; N:對帳異常 | |
-| DIFF_COUNT | NUMBER(8,0) | | | GPS與new-pay日對帳總差異筆數 | |
+| DIFF_COUNT | NUMBER(8,0) | | | OLS與new-pay日對帳總差異筆數 | |
 | CP_TX_DT | VARCHAR2(8) | N | | 報表交易日期 | |
-| CP_TOTAL_CONUT | NUMBER(8,0) | | | GPS當日交易總筆數 | |
+| CP_TOTAL_CONUT | NUMBER(8,0) | | | OLS當日交易總筆數 | |
 | NEWPAY_TOTAL_COUNT | NUMBER(8,0) | | | new-pay當日交易總筆數 | |
-| CP_FILE_NAME | VARCHAR2(80) | | | GPS原始日對帳檔名稱 | |
+| CP_FILE_NAME | VARCHAR2(80) | | | OLS原始日對帳檔名稱 | |
 
 ## 4.7.9. ADD Table: MWP_CP_RECON_MONTHLY_LOG
 
@@ -845,14 +845,14 @@ CP抓到的月對帳檔內容會被parsing入MWP_CP_RECON_MONTHLY_DETAIL
 | RECON_ID | VARCHAR(20) | N | | pkey | |
 | MERCHANT_ID | VARCHAR2(20) | N | | | |
 | CP_TX_DT | VARCHAR2(8) | N | | 報表交易月份 | |
-| CP_TOTAL_CONUT | NUMBER(8,0) | | | GPS當月交易總筆數 | |
+| CP_TOTAL_CONUT | NUMBER(8,0) | | | OLS當月交易總筆數 | |
 | NEWPAY_TOTAL_COUNT | NUMBER(8,0) | | | new-pay當月交易總筆數 | |
-| CP_DETAIL_FILE_NAME | VARCHAR2(80) | | | GPS原始月交易明細檔名稱 | |
-| CP_SUMMARY_FILE_NAME | VARCHAR2(80) | | | GPS原始月交易總表檔名稱 | |
+| CP_DETAIL_FILE_NAME | VARCHAR2(80) | | | OLS原始月交易明細檔名稱 | |
+| CP_SUMMARY_FILE_NAME | VARCHAR2(80) | | | OLS原始月交易總表檔名稱 | |
 
-## 4.7.12. ADD Table: MWP_GPS_BDEDUCTION_LOG
+## 4.7.12. ADD Table: MWP_OLS_BDEDUCTION_LOG
 
-## 4.7.13. ADD Table: MWP_GPS_ToS
+## 4.7.13. ADD Table: MWP_OLS_ToS
 
 | Column Name | Data Type | Null | Default | Comment | Sample |
 |---|---|---|---|---|---|
@@ -864,7 +864,7 @@ CP抓到的月對帳檔內容會被parsing入MWP_CP_RECON_MONTHLY_DETAIL
 | ToS_Modified_Date | VARCHAR2(14) | N | | ToS最後修改時間 | |
 | ToS_Start_Date | VARCHAR2(14) | N | | ToS生效時間 | |
 
-## 4.7.14. ADD Sequence: gpsProvTXSeq
+## 4.7.14. ADD Sequence: olsProvTXSeq
 
 ## 4.7.15. Modify Table: MWP_User
 
@@ -887,7 +887,7 @@ CP抓到的月對帳檔內容會被parsing入MWP_CP_RECON_MONTHLY_DETAIL
 
 ---
 
-# 4.8. GPS介接需求驗證
+# 4.8. OLS介接需求驗證
 
 ## 4.8.1. ADD：Web Service(SOAP 1.1)
 
@@ -907,7 +907,7 @@ CP抓到的月對帳檔內容會被parsing入MWP_CP_RECON_MONTHLY_DETAIL
 
 ## 1. PGP Key Generation Flow
 
-　　為符合GPS規格(BatchAPIGuide-DCB-v109.pdf)要求，且為確保資料在Internet上傳輸安全性，故在本專案中一旦透過Batch API資料傳輸皆需使用PGP加密方式。PGP是一種PKI(Public Key Infrastructure)公開金鑰的加密方式，使用非對稱式加密演算法，加密時使用接收對方的公鑰(public key)加密，接收後只能以接收者的私鑰(private key)解密。
+　　為符合OLS規格(BatchAPIGuide-DCB-v109.pdf)要求，且為確保資料在Internet上傳輸安全性，故在本專案中一旦透過Batch API資料傳輸皆需使用PGP加密方式。PGP是一種PKI(Public Key Infrastructure)公開金鑰的加密方式，使用非對稱式加密演算法，加密時使用接收對方的公鑰(public key)加密，接收後只能以接收者的私鑰(private key)解密。
 
 　　當初次使用PGP軟體時，產生的key ring(鑰匙圈)便包含了公鑰跟私鑰，鑰匙圈裡會有自己產生的公私鑰以及與你資料來往方的公鑰，公鑰(public key)是給資料來往方(ex. OLS)使用的，因此OLS若要傳輸加密檔案至Telco，就必須使用Telco產生的公鑰加密，私鑰(private key)是自己使用的，可用來解密以及對公鑰簽章(確認資料來往方公鑰正確無誤，以提升安全性)，私鑰分成master key與subkeys，前者用來簽章，後者用來加解密。一個私鑰只有一個master key但允許很多組subkeys。目前廣泛使用的PGP加密軟體為GnuPG，可用於加密、數位簽章、以及產生非對稱鑰匙，本專案亦使用GnuPG軟體產生金鑰。
 

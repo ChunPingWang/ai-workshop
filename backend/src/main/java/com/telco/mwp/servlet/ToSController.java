@@ -22,7 +22,7 @@ public class ToSController {
     public String getToS(@RequestParam(required = false) String merchantID,
             @RequestParam(required = false) String version) {
         if (merchantID == null || merchantID.length() == 0) merchantID = "I00000000";
-        String sql = "SELECT * FROM MWP_GPS_TOS WHERE MERCHANT_ID='" + merchantID + "'";
+        String sql = "SELECT * FROM MWP_OLS_TOS WHERE MERCHANT_ID='" + merchantID + "'";
         if (version != null && version.length() > 0) {
             sql = sql + " AND TOS_VERSION=" + version;
         }
@@ -45,10 +45,10 @@ public class ToSController {
             @RequestParam String content, @RequestParam(required = false) String note) {
         try {
             Integer max = DBUtil.jdbc.queryForObject(
-                    "SELECT MAX(TOS_VERSION) FROM MWP_GPS_TOS WHERE MERCHANT_ID='" + merchantID + "'", Integer.class);
+                    "SELECT MAX(TOS_VERSION) FROM MWP_OLS_TOS WHERE MERCHANT_ID='" + merchantID + "'", Integer.class);
             int ver = (max == null ? 1 : max.intValue() + 1);
             String url = "http://localhost:8099/getToS.jsp?merchantID=" + merchantID + "&version=" + ver;
-            DBUtil.jdbc.update("INSERT INTO MWP_GPS_TOS (MERCHANT_ID, TOS_VERSION, TOS_URL, TOS_CONTENT, TOS_NOTE, TOS_MODIFIED_DATE, TOS_START_DATE) VALUES ('"
+            DBUtil.jdbc.update("INSERT INTO MWP_OLS_TOS (MERCHANT_ID, TOS_VERSION, TOS_URL, TOS_CONTENT, TOS_NOTE, TOS_MODIFIED_DATE, TOS_START_DATE) VALUES ('"
                     + merchantID + "'," + ver + ",'" + url + "','" + content + "','" + (note == null ? "" : note)
                     + "','" + CommonUtil.now14() + "','" + startDate + "')");
             return "OK version=" + ver + " url=" + url;
@@ -62,6 +62,6 @@ public class ToSController {
     @GetMapping("/sa/tos/query")
     public Object query(@RequestParam String merchantID) {
         return DBUtil.jdbc.queryForList(
-                "SELECT * FROM MWP_GPS_TOS WHERE MERCHANT_ID='" + merchantID + "' ORDER BY TOS_VERSION DESC");
+                "SELECT * FROM MWP_OLS_TOS WHERE MERCHANT_ID='" + merchantID + "' ORDER BY TOS_VERSION DESC");
     }
 }

@@ -16,7 +16,7 @@ import com.telco.mwp.util.DBUtil;
 public class ReportController {
 
     /**
-     * 4.6.1 交易報表查詢: 時間可到小時(yyyyMMddHH), timeType=auth 用授權時間(只限GPS)
+     * 4.6.1 交易報表查詢: 時間可到小時(yyyyMMddHH), timeType=auth 用授權時間(只限OLS)
      */
     @GetMapping(value = "/sa/report/trans", produces = "text/html;charset=UTF-8")
     public String transReport(@RequestParam String from, @RequestParam String to,
@@ -41,7 +41,7 @@ public class ReportController {
         return html(sql);
     }
 
-    /** 4.6.3 GPS每日對帳結果查詢 */
+    /** 4.6.3 OLS每日對帳結果查詢 */
     @GetMapping(value = "/sa/report/reconDaily", produces = "text/html;charset=UTF-8")
     public String reconDaily(@RequestParam String from, @RequestParam String to) {
         return html("SELECT * FROM MWP_CP_RECON_DAILY_SUMMARY WHERE CP_TX_DT >= '" + from + "' AND CP_TX_DT <= '" + to
@@ -55,7 +55,7 @@ public class ReportController {
                 + "' AND RECON_RESULT <> '000' ORDER BY SQE_NUM");
     }
 
-    /** 4.6.4 GPS每月對帳結果查詢 */
+    /** 4.6.4 OLS每月對帳結果查詢 */
     @GetMapping(value = "/sa/report/reconMonthly", produces = "text/html;charset=UTF-8")
     public String reconMonthly(@RequestParam String from, @RequestParam String to) {
         return html("SELECT * FROM MWP_CP_RECON_MONTHLY_SUMMARY WHERE CP_TX_DT >= '" + from + "' AND CP_TX_DT <= '"

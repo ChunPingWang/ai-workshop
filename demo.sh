@@ -10,10 +10,10 @@ step "0. echo"
 curl -s "$B/soap/echo"; echo
 
 step "1. Association: postpaid / CSP auto-provision / nonCSP / DCB 404"
-curl -s "$B/servlet/SMSPushMOGPS?msisdn=0912345678&content=DCB_ASSOCIATION:SUT123"; echo
-curl -s "$B/servlet/SMSPushMOGPS?msisdn=0955555555&content=DCB_ASSOCIATION:SUT555"; echo
-curl -s "$B/servlet/SMSPushMOGPS?msisdn=0977777777&content=DCB_ASSOCIATION:SUT777"; echo
-curl -s "$B/servlet/SMSPushMOGPS?msisdn=0912345678&content=DCB_ASSOCIATION:BAD404X"; echo
+curl -s "$B/servlet/SMSPushMOOLS?msisdn=0912345678&content=DCB_ASSOCIATION:SUT123"; echo
+curl -s "$B/servlet/SMSPushMOOLS?msisdn=0955555555&content=DCB_ASSOCIATION:SUT555"; echo
+curl -s "$B/servlet/SMSPushMOOLS?msisdn=0977777777&content=DCB_ASSOCIATION:SUT777"; echo
+curl -s "$B/servlet/SMSPushMOOLS?msisdn=0912345678&content=DCB_ASSOCIATION:BAD404X"; echo
 
 step "2. getProvisioning: postpaid true / prepaid false / hybrid false / unknown INVALID_USER"
 for U in U0001 U0002 U0004 U9999; do
@@ -35,7 +35,7 @@ curl -s "$B/fakeols/genRequestFile?type=Charge&correlationId=C001"; echo
 curl -s "$B/fakeols/genRequestFile?type=Charge&correlationId=C002"; echo
 curl -s "$B/fakeols/genRequestFile?type=Cancel&correlationId=C003"; echo
 curl -s "$B/batch/run?job=all"; echo
-echo "--- response files:"; ls backend/data/gps-sftp/incoming/ | tail -3
+echo "--- response files:"; ls backend/data/ols-sftp/incoming/ | tail -3
 
 step "5. Refund C002"
 curl -s "$B/fakeols/genRequestFile?type=Refund&correlationId=C002"; echo
@@ -43,12 +43,12 @@ curl -s "$B/batch/run?job=all"; echo
 
 step "6. 日對帳 (正常, 應為 Y/diff=0)"
 curl -s "$B/fakeols/genReconFile"; echo
-curl -s "$B/batch/run?job=reconGPSDaily"; echo
+curl -s "$B/batch/run?job=reconOLSDaily"; echo
 curl -s "$B/sa/report/reconDaily?from=20000101&to=20991231"; echo
 
 step "7. 月對帳 (mismatch=true, 應觸發 104 告警, 看 console log)"
 curl -s "$B/fakeols/genMonthlyFile?mismatch=true"; echo
-curl -s "$B/batch/run?job=reconGPSMonthly"; echo
+curl -s "$B/batch/run?job=reconOLSMonthly"; echo
 
 step "8. 報表"
 curl -s "$B/csr/trans?msisdn=0912345678"; echo

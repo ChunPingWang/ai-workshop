@@ -21,7 +21,7 @@ import com.telco.mwp.util.DBUtil;
  * Mpush 收到 DCB_ASSOCIATION 簡訊會打這支
  */
 @RestController
-public class SMSPushMOGPS {
+public class SMSPushMOOLS {
 
     // 呼叫 OLS Carrier Billing API 的位置 (先指到內建的 fake OLS)
     static String OLS_API_URL = "http://localhost:8099/fakeols/associate";
@@ -33,14 +33,14 @@ public class SMSPushMOGPS {
         CSP_USERS.put("0966666666", "U0006,1"); // CSP prepaid
     }
 
-    @RequestMapping("/servlet/SMSPushMOGPS")
+    @RequestMapping("/servlet/SMSPushMOOLS")
     public String onMoEvent(@RequestParam String msisdn, @RequestParam String content) {
         String id = String.valueOf(System.currentTimeMillis());
         String retCode = "00000000";
         String retDesc = "Success";
         String sut = "";
         try {
-            DBUtil.jdbc.update("INSERT INTO MWP_SMS_GPS (ID, CREATE_TIME, SOURCE_SMS_CONTENT, SOURCE_MSISDN, STATUS) VALUES ('"
+            DBUtil.jdbc.update("INSERT INTO MWP_SMS_OLS (ID, CREATE_TIME, SOURCE_SMS_CONTENT, SOURCE_MSISDN, STATUS) VALUES ('"
                     + id + "','" + CommonUtil.now14() + "','" + content + "','" + msisdn + "','I')");
 
             // 簡訊內容: carrier customizable 字串 + 冒號 + 最長50字元 Token
@@ -117,7 +117,7 @@ public class SMSPushMOGPS {
 
         String status = "00000000".equals(retCode) ? "D" : "F";
         try {
-            DBUtil.jdbc.update("UPDATE MWP_SMS_GPS SET STATUS='" + status + "', REQ_CONTENT='" + sut + "', REQ_TIME='"
+            DBUtil.jdbc.update("UPDATE MWP_SMS_OLS SET STATUS='" + status + "', REQ_CONTENT='" + sut + "', REQ_TIME='"
                     + CommonUtil.now14() + "', RET_CODE='" + retCode + "', RET_DESCRIPTION='" + retDesc
                     + "' WHERE ID='" + id + "'");
         } catch (Exception e) {

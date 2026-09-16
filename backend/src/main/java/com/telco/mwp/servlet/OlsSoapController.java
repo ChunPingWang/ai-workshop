@@ -12,20 +12,20 @@ import com.telco.mwp.util.CommonUtil;
 import com.telco.mwp.util.DBUtil;
 
 /**
- * OnlineStore(GPS) SOAP 介接 (getProvisioning / Auth / echo)
+ * OnlineStore(OLS) SOAP 介接 (getProvisioning / Auth / echo)
  * 依 FSD 4.2.2 / 4.2.3
  *
- * TODO: SD 4.1 說要走 shell/core 分層 + GPSProcessor/State Pattern,
+ * TODO: SD 4.1 說要走 shell/core 分層 + OLSProcessor/State Pattern,
  *       時程來不及, 先全部寫在這裡, 之後再重構 (2013/4 [人員B])
  */
 @RestController
-public class GpsSoapController {
+public class OlsSoapController {
 
     // billing agreement 是 OLS 提供專屬電信業者的字串
     public static final String BILLING_AGREEMENT = "TELCO_TW";
-    public static final String GPS_MERCHANT = "E000001";
-    public static final String GPS_CHANNEL = "0300";
-    public static final String GPS_SERVICE_ID = "SVC_GPS_001";
+    public static final String OLS_MERCHANT = "E000001";
+    public static final String OLS_CHANNEL = "0300";
+    public static final String OLS_SERVICE_ID = "SVC_OLS_001";
 
     @GetMapping("/soap/echo")
     public String echo() {
@@ -46,8 +46,8 @@ public class GpsSoapController {
         String isProv = "false";
         String resp = "";
         try {
-            // 全部 request 存入 MWP_GPS_SOAP_PROVISIONING (XML 欄位只有 256, 先截斷)
-            DBUtil.jdbc.update("INSERT INTO MWP_GPS_SOAP_PROVISIONING (ID, CREATE_TIME, REQUEST_XML, CORRELATION_ID, OUT) VALUES ('"
+            // 全部 request 存入 MWP_OLS_SOAP_PROVISIONING (XML 欄位只有 256, 先截斷)
+            DBUtil.jdbc.update("INSERT INTO MWP_OLS_SOAP_PROVISIONING (ID, CREATE_TIME, REQUEST_XML, CORRELATION_ID, OUT) VALUES ('"
                     + id + "','" + CommonUtil.now14() + "','" + CommonUtil.trunc(xml.replace("'", ""), 250) + "','"
                     + corr + "','" + out + "')");
 
@@ -77,7 +77,7 @@ public class GpsSoapController {
                         DBUtil.jdbc.update("INSERT INTO MWP_BATCH_PROVISION_POOL (OUT, CREATE_TIME, STATUS) VALUES ('"
                                 + out + "','" + CommonUtil.now14() + "','I')");
                     }
-                    long provTxId = DBUtil.jdbc.queryForObject("SELECT GPSPROVTXSEQ.NEXTVAL FROM DUAL", Long.class)
+                    long provTxId = DBUtil.jdbc.queryForObject("SELECT OLSPROVTXSEQ.NEXTVAL FROM DUAL", Long.class)
                             .longValue();
                     resp = provResp(result, isProv, String.valueOf(provTxId), locale);
                 }
@@ -88,7 +88,7 @@ public class GpsSoapController {
             resp = provResp(result, "false", "", locale);
         }
         try {
-            DBUtil.jdbc.update("UPDATE MWP_GPS_SOAP_PROVISIONING SET PROV_RESULT='" + result + "', IS_PROVISIONED='"
+            DBUtil.jdbc.update("UPDATE MWP_OLS_SOAP_PROVISIONING SET PROV_RESULT='" + result + "', IS_PROVISIONED='"
                     + isProv + "', RESP_XML='" + CommonUtil.trunc(resp.replace("'", ""), 250) + "' WHERE ID='" + id + "'");
         } catch (Exception e2) {
             // 寫 log 失敗不影響交易
@@ -105,7 +105,7 @@ public class GpsSoapController {
         String tosUrl = "";
         try {
             List<Map<String, Object>> tos = DBUtil.jdbc.queryForList(
-                    "SELECT * FROM MWP_GPS_TOS WHERE MERCHANT_ID='" + GPS_MERCHANT + "' ORDER BY TOS_VERSION DESC");
+                    "SELECT * FROM MWP_OLS_TOS WHERE MERCHANT_ID='" + OLS_MERCHANT + "' ORDER BY TOS_VERSION DESC");
             if (tos.size() > 0) {
                 tosVersion = String.valueOf(((Number) tos.get(0).get("TOS_VERSION")).intValue());
                 tosUrl = (String) tos.get(0).get("TOS_URL");
@@ -148,7 +148,7 @@ public class GpsSoapController {
         try {
             // Idempotency: 同 CorrelationId 視為同一個 request, 回傳同樣的 response
             List<Map<String, Object>> dup = DBUtil.jdbc
-                    .queryForList("SELECT * FROM MWP_GPS_SOAP_AUTH WHERE CORRELATION_ID='" + corr + "'");
+                    .queryForList("SELECT * FROM MWP_OLS_SOAP_AUTH WHERE CORRELATION_ID='" + corr + "'");
             if (dup.size() > 0) {
                 System.out.println("[AUTH] dup correlationId=" + corr + ", return saved response");
                 return (String) dup.get(0).get("RESP_XML");
@@ -184,7 +184,7 @@ public class GpsSoapController {
                     String lock = (String) u.get("ACC_LOCK");
                     // ToS version 要與現行最新的 ToS 版次一致
                     int latestTos = DBUtil.jdbc.queryForObject(
-                            "SELECT MAX(TOS_VERSION) FROM MWP_GPS_TOS WHERE MERCHANT_ID='" + GPS_MERCHANT + "'",
+                            "SELECT MAX(TOS_VERSION) FROM MWP_OLS_TOS WHERE MERCHANT_ID='" + OLS_MERCHANT + "'",
                             Integer.class).intValue();
                     if (!String.valueOf(latestTos).equals(tosVer)) {
                         result = "INVALID_TOS";
@@ -200,8 +200,8 @@ public class GpsSoapController {
                         String now = CommonUtil.now14();
                         String authDt = CommonUtil.utcMillisToTwTime(purchaseTime);
                         DBUtil.jdbc.update("INSERT INTO MWP_PAY_TRANS (TXID, MERCHANT_ID, ACC_ID, SERVICE_ID, CHANNEL, AMOUNT, CURRENCY, TX_STATUS, TX_DT, AUTH_DT, MEMO, MERCHANDIZE_NAME, REFERENCE, MODIFY_DATE) VALUES ('"
-                                + txid + "','" + GPS_MERCHANT + "','" + u.get("ACC_ID") + "','" + GPS_SERVICE_ID + "','"
-                                + GPS_CHANNEL + "'," + amount + ",'TWD','A','" + now + "','" + authDt + "','" + corr
+                                + txid + "','" + OLS_MERCHANT + "','" + u.get("ACC_ID") + "','" + OLS_SERVICE_ID + "','"
+                                + OLS_CHANNEL + "'," + amount + ",'TWD','A','" + now + "','" + authDt + "','" + corr
                                 + "','" + CommonUtil.trunc(payDesc, 60) + "','" + merchantContact + "','" + now + "')");
                         result = "SUCCESS";
                     }
@@ -217,7 +217,7 @@ public class GpsSoapController {
                 + "</Message><AuthTransactionId>" + txid + "</AuthTransactionId></AuthResponse>";
 
         try {
-            DBUtil.jdbc.update("INSERT INTO MWP_GPS_SOAP_AUTH (ID, CREATE_TIME, REQUEST_XML, CORRELATION_ID, PURCHASE_TIME, OUT, PAYMENT_DESCRIPTION, MERCHANT_CONTACT, PRICE, ROUNDED_PRICE, AUTH_RESULT, AUTH_TXID, RESP_XML) VALUES ('"
+            DBUtil.jdbc.update("INSERT INTO MWP_OLS_SOAP_AUTH (ID, CREATE_TIME, REQUEST_XML, CORRELATION_ID, PURCHASE_TIME, OUT, PAYMENT_DESCRIPTION, MERCHANT_CONTACT, PRICE, ROUNDED_PRICE, AUTH_RESULT, AUTH_TXID, RESP_XML) VALUES ('"
                     + id + "','" + CommonUtil.now14() + "','" + CommonUtil.trunc(xml.replace("'", ""), 250) + "','"
                     + corr + "','" + purchaseTime + "','" + out + "','" + payDesc + "','" + merchantContact + "','"
                     + priceMicros + "'," + amount + ",'" + result + "','" + txid + "','"

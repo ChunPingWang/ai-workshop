@@ -17,7 +17,7 @@ public class CommonUtil {
     }
 
     /**
-     * GPS的交易單位為micros, 即原有的交易乘上1,000,000
+     * OLS的交易單位為micros, 即原有的交易乘上1,000,000
      * Auth金額要用小數點後一位做四捨五入
      */
     public static long microsToAmount(String micros) {

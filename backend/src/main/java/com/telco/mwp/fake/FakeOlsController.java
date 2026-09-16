@@ -41,7 +41,7 @@ public class FakeOlsController {
 
     /**
      * 產生 batch request file, type=Charge/Cancel/Refund
-     * priceMicros 不給的話從 MWP_GPS_SOAP_AUTH 撈該筆 Auth 的原始金額
+     * priceMicros 不給的話從 MWP_OLS_SOAP_AUTH 撈該筆 Auth 的原始金額
      */
     @GetMapping("/fakeols/genRequestFile")
     public String genRequestFile(@RequestParam String type, @RequestParam String correlationId,
@@ -49,13 +49,13 @@ public class FakeOlsController {
         try {
             if (priceMicros == null) {
                 List<Map<String, Object>> a = DBUtil.jdbc.queryForList(
-                        "SELECT PRICE FROM MWP_GPS_SOAP_AUTH WHERE CORRELATION_ID='" + correlationId + "'");
+                        "SELECT PRICE FROM MWP_OLS_SOAP_AUTH WHERE CORRELATION_ID='" + correlationId + "'");
                 priceMicros = a.size() > 0 ? (String) a.get(0).get("PRICE") : "99000000";
             }
             fileSeq++;
             String ts = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
             String fn = "request_TELCO_TW_DCB_" + ts + "0800_" + fileSeq + ".csv";
-            FileWriter fw = new FileWriter(new File("data/gps-sftp/request", fn));
+            FileWriter fw = new FileWriter(new File("data/ols-sftp/request", fn));
             fw.write("Type,CorrelationId,TimestampMillis,BillingAgreementId,PriceMicros,Currency\n");
             fw.write(type + "," + correlationId + "," + System.currentTimeMillis() + ",TELCO_TW," + priceMicros + ",TWD\n");
             fw.close();
@@ -67,7 +67,7 @@ public class FakeOlsController {
     }
 
     /**
-     * 產生日對帳檔: 依 new-pay DB 的 GPS 交易 (該日 UTC-8 window) 產生
+     * 產生日對帳檔: 依 new-pay DB 的 OLS 交易 (該日 UTC-8 window) 產生
      * mismatch=true 會把第一筆金額多加 1 元, 用來 demo 對帳異常告警
      * date 不給就用現在時間推算 (now - 16 小時的日期)
      */
@@ -88,7 +88,7 @@ public class FakeOlsController {
             String end = d8.format(c2.getTime()) + "155959";
 
             String fn = "recon_TELCO_TW_DCB_" + date + ".csv";
-            FileWriter fw = new FileWriter(new File("data/gps-sftp/recon", fn));
+            FileWriter fw = new FileWriter(new File("data/ols-sftp/recon", fn));
             fw.write("BillingAgreementId,CorrelationId,Status,ItemPriceMicros,TaxMicros,TotalAmountMicros,Currency,LastEvent,TimestampMillis,EventResponse,EventResponseDesc\n");
             int rows = 0;
             boolean first = true;
@@ -143,7 +143,7 @@ public class FakeOlsController {
             String end = d6.format(c2.getTime()) + "01155959";
 
             String fn = "invoice_details_TELCO_TW_DCB_" + month + ".csv";
-            FileWriter fw = new FileWriter(new File("data/gps-sftp/monthly", fn));
+            FileWriter fw = new FileWriter(new File("data/ols-sftp/monthly", fn));
             fw.write("BillingAgreementId,CorrelationId,Event,ItemPriceMicros,TaxMicros,TotalAmountMicros,Currency,TimestampMillis\n");
             int rows = 0;
             boolean first = true;

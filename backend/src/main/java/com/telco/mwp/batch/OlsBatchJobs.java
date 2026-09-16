@@ -19,66 +19,66 @@ import com.telco.mwp.util.CommonUtil;
 import com.telco.mwp.util.DBUtil;
 
 /**
- * GPS 相關批次全部在這 (SD 4.4 Batch調整)
- * getGPSRequest / ProcessGPSReqFiles / BuildGPSResFiles / putGPSResponse /
- * GPSChargeMonitor / reconGPSDaily / reconGPSMonthly / reconGPSSummary / BuildDeductionCSPFile
+ * OLS 相關批次全部在這 (SD 4.4 Batch調整)
+ * getOLSRequest / ProcessOLSReqFiles / BuildOLSResFiles / putOLSResponse /
+ * OLSChargeMonitor / reconOLSDaily / reconOLSMonthly / reconOLSSummary / BuildDeductionCSPFile
  *
  * 注意: 排程間隔先拉長, demo 都用 /batch/run?job=xxx 手動觸發
  */
 @Component
-public class GpsBatchJobs {
+public class OlsBatchJobs {
 
     // 路徑都先寫死, 上線前記得改 (2013/4)
-    static String SFTP_REQ_DIR = "data/gps-sftp/request";
-    static String SFTP_INCOMING_DIR = "data/gps-sftp/incoming";
-    static String SFTP_RECON_DIR = "data/gps-sftp/recon";
-    static String SFTP_MONTHLY_DIR = "data/gps-sftp/monthly";
-    static String WORK_REQ_DIR = "data/gps-work/request";
-    static String WORK_RESP_DIR = "data/gps-work/response";
+    static String SFTP_REQ_DIR = "data/ols-sftp/request";
+    static String SFTP_INCOMING_DIR = "data/ols-sftp/incoming";
+    static String SFTP_RECON_DIR = "data/ols-sftp/recon";
+    static String SFTP_MONTHLY_DIR = "data/ols-sftp/monthly";
+    static String WORK_REQ_DIR = "data/ols-work/request";
+    static String WORK_RESP_DIR = "data/ols-work/response";
     static String NAS_DAILY_DIR = "data/nas/daily";
     static String NAS_MONTHLY_DIR = "data/nas/monthly";
     static String CSP_DIR = "data/csp";
 
-    static String BILLING_AGREEMENT = "TELCO_TW"; // GpsSoapController 也有一份, 要改要一起改
+    static String BILLING_AGREEMENT = "TELCO_TW"; // OlsSoapController 也有一份, 要改要一起改
     static String MERCHANT = "E000001";
 
     static int reqSeq = 0; // REQ_ID 流水號
 
-    // ==================== 4.4.3 getGPSRequest 每小時 ====================
+    // ==================== 4.4.3 getOLSRequest 每小時 ====================
 
     @Scheduled(initialDelay = 120000, fixedDelay = 3600000)
-    public void getGPSRequest() {
+    public void getOLSRequest() {
         List<File> files = new ArrayList<File>();
         walk(new File(SFTP_REQ_DIR), files);
         for (File f : files) {
             try {
                 if (!f.getName().endsWith(".csv")) continue;
                 int cnt = DBUtil.jdbc.queryForObject(
-                        "SELECT COUNT(*) FROM MWP_GPS_REQ_LOG WHERE FILE_NAME='" + f.getName() + "'", Integer.class)
+                        "SELECT COUNT(*) FROM MWP_OLS_REQ_LOG WHERE FILE_NAME='" + f.getName() + "'", Integer.class)
                         .intValue();
                 if (cnt > 0) continue; // 抓過了
                 copy(f, new File(WORK_REQ_DIR, f.getName()));
                 reqSeq++;
                 String reqId = System.currentTimeMillis() + "" + reqSeq;
-                DBUtil.jdbc.update("INSERT INTO MWP_GPS_REQ_LOG (REQ_ID, CREATE_TIME, FILE_NAME, STATUS, LAST_MOD_TIME) VALUES ('"
+                DBUtil.jdbc.update("INSERT INTO MWP_OLS_REQ_LOG (REQ_ID, CREATE_TIME, FILE_NAME, STATUS, LAST_MOD_TIME) VALUES ('"
                         + reqId + "','" + CommonUtil.now14() + "','" + f.getName() + "','I','" + CommonUtil.now14() + "')");
-                System.out.println("[getGPSRequest] got " + f.getName());
+                System.out.println("[getOLSRequest] got " + f.getName());
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
-    // ==================== 4.4.1 ProcessGPSReqFiles ====================
+    // ==================== 4.4.1 ProcessOLSReqFiles ====================
 
     @Scheduled(initialDelay = 180000, fixedDelay = 3600000)
-    public void processGPSReqFiles() {
-        List<Map<String, Object>> logs = DBUtil.jdbc.queryForList("SELECT * FROM MWP_GPS_REQ_LOG WHERE STATUS='I'");
+    public void processOLSReqFiles() {
+        List<Map<String, Object>> logs = DBUtil.jdbc.queryForList("SELECT * FROM MWP_OLS_REQ_LOG WHERE STATUS='I'");
         for (Map<String, Object> log : logs) {
             String reqId = (String) log.get("REQ_ID");
             String fileName = (String) log.get("FILE_NAME");
             try {
-                DBUtil.jdbc.update("UPDATE MWP_GPS_REQ_LOG SET STATUS='P', LAST_MOD_TIME='" + CommonUtil.now14()
+                DBUtil.jdbc.update("UPDATE MWP_OLS_REQ_LOG SET STATUS='P', LAST_MOD_TIME='" + CommonUtil.now14()
                         + "' WHERE REQ_ID='" + reqId + "'");
                 File f = new File(WORK_REQ_DIR, fileName);
                 BufferedReader br = new BufferedReader(new FileReader(f));
@@ -94,17 +94,17 @@ public class GpsBatchJobs {
 
                     // Idempotency: orderNo+type 有相同的直接 copy 一份 insert (包括 response 結果, 但 REQ_ID 不同)
                     List<Map<String, Object>> dup = DBUtil.jdbc
-                            .queryForList("SELECT * FROM MWP_GPS_REQ_DETAIL WHERE CORRELATION_ID='" + corr
+                            .queryForList("SELECT * FROM MWP_OLS_REQ_DETAIL WHERE CORRELATION_ID='" + corr
                                     + "' AND REQ_TYPE='" + type + "' AND RESULT_CODE IS NOT NULL");
                     if (dup.size() > 0) {
                         Map<String, Object> d = dup.get(0);
-                        DBUtil.jdbc.update("INSERT INTO MWP_GPS_REQ_DETAIL (REQ_ID, REQ_TYPE, REQ_TIMESTAMP, CORRELATION_ID, BILLING_AGREEMENT_ID, RESP_TIMESTAMP, RESULT_CODE, MESSAGE) VALUES ('"
+                        DBUtil.jdbc.update("INSERT INTO MWP_OLS_REQ_DETAIL (REQ_ID, REQ_TYPE, REQ_TIMESTAMP, CORRELATION_ID, BILLING_AGREEMENT_ID, RESP_TIMESTAMP, RESULT_CODE, MESSAGE) VALUES ('"
                                 + reqId + "','" + type + "','" + ts + "','" + corr + "','" + BILLING_AGREEMENT + "','"
                                 + d.get("RESP_TIMESTAMP") + "','" + d.get("RESULT_CODE") + "','" + d.get("MESSAGE") + "')");
                         continue;
                     }
 
-                    DBUtil.jdbc.update("INSERT INTO MWP_GPS_REQ_DETAIL (REQ_ID, REQ_TYPE, REQ_TIMESTAMP, CORRELATION_ID, BILLING_AGREEMENT_ID) VALUES ('"
+                    DBUtil.jdbc.update("INSERT INTO MWP_OLS_REQ_DETAIL (REQ_ID, REQ_TYPE, REQ_TIMESTAMP, CORRELATION_ID, BILLING_AGREEMENT_ID) VALUES ('"
                             + reqId + "','" + type + "','" + ts + "','" + corr + "','" + BILLING_AGREEMENT + "')");
 
                     if (type.equalsIgnoreCase("Charge")) {
@@ -118,14 +118,14 @@ public class GpsBatchJobs {
                     }
                 }
                 br.close();
-                DBUtil.jdbc.update("UPDATE MWP_GPS_REQ_LOG SET STATUS='PD', LAST_MOD_TIME='" + CommonUtil.now14()
+                DBUtil.jdbc.update("UPDATE MWP_OLS_REQ_LOG SET STATUS='PD', LAST_MOD_TIME='" + CommonUtil.now14()
                         + "' WHERE REQ_ID='" + reqId + "'");
                 // 搬到 Processed
                 f.renameTo(new File(WORK_REQ_DIR + "/Processed", fileName));
-                System.out.println("[processGPSReqFiles] done " + fileName);
+                System.out.println("[processOLSReqFiles] done " + fileName);
             } catch (Exception e) {
                 e.printStackTrace();
-                DBUtil.jdbc.update("UPDATE MWP_GPS_REQ_LOG SET STATUS='F', LAST_MOD_TIME='" + CommonUtil.now14()
+                DBUtil.jdbc.update("UPDATE MWP_OLS_REQ_LOG SET STATUS='F', LAST_MOD_TIME='" + CommonUtil.now14()
                         + "' WHERE REQ_ID='" + reqId + "'");
             }
         }
@@ -212,21 +212,21 @@ public class GpsBatchJobs {
     }
 
     private void setDetailResult(String reqId, String type, String corr, String code, String msg) {
-        DBUtil.jdbc.update("UPDATE MWP_GPS_REQ_DETAIL SET RESP_TIMESTAMP='" + System.currentTimeMillis()
+        DBUtil.jdbc.update("UPDATE MWP_OLS_REQ_DETAIL SET RESP_TIMESTAMP='" + System.currentTimeMillis()
                 + "', RESULT_CODE='" + code + "', MESSAGE='" + msg + "' WHERE REQ_ID='" + reqId
                 + "' AND CORRELATION_ID='" + corr + "' AND REQ_TYPE='" + type + "'");
     }
 
-    // ==================== 4.4.2 BuildGPSResFiles ====================
+    // ==================== 4.4.2 BuildOLSResFiles ====================
 
     @Scheduled(initialDelay = 240000, fixedDelay = 3600000)
-    public void buildGPSResFiles() {
-        List<Map<String, Object>> logs = DBUtil.jdbc.queryForList("SELECT * FROM MWP_GPS_REQ_LOG WHERE STATUS='PD'");
+    public void buildOLSResFiles() {
+        List<Map<String, Object>> logs = DBUtil.jdbc.queryForList("SELECT * FROM MWP_OLS_REQ_LOG WHERE STATUS='PD'");
         for (Map<String, Object> log : logs) {
             String reqId = (String) log.get("REQ_ID");
             String fileName = (String) log.get("FILE_NAME");
             try {
-                int pending = DBUtil.jdbc.queryForObject("SELECT COUNT(*) FROM MWP_GPS_REQ_DETAIL WHERE REQ_ID='"
+                int pending = DBUtil.jdbc.queryForObject("SELECT COUNT(*) FROM MWP_OLS_REQ_DETAIL WHERE REQ_ID='"
                         + reqId + "' AND RESULT_CODE IS NULL", Integer.class).intValue();
                 if (pending > 0) continue; // 還沒處理完
 
@@ -234,27 +234,27 @@ public class GpsBatchJobs {
                 FileWriter fw = new FileWriter(new File(WORK_RESP_DIR, respName));
                 fw.write("Type,CorrelationId,Timestamp,BillingAgreementId,ReturnCode,Message\n");
                 List<Map<String, Object>> details = DBUtil.jdbc
-                        .queryForList("SELECT * FROM MWP_GPS_REQ_DETAIL WHERE REQ_ID='" + reqId + "'");
+                        .queryForList("SELECT * FROM MWP_OLS_REQ_DETAIL WHERE REQ_ID='" + reqId + "'");
                 for (Map<String, Object> d : details) {
                     fw.write(d.get("REQ_TYPE") + "," + d.get("CORRELATION_ID") + "," + d.get("RESP_TIMESTAMP") + ","
                             + BILLING_AGREEMENT + "," + d.get("RESULT_CODE") + "," + d.get("MESSAGE") + "\n");
                 }
                 fw.close();
                 // TODO PGP 加密, key 還沒申請下來, 先傳明文 (2013/4)
-                DBUtil.jdbc.update("UPDATE MWP_GPS_REQ_LOG SET STATUS='D', RESP_TIME='" + CommonUtil.now14()
+                DBUtil.jdbc.update("UPDATE MWP_OLS_REQ_LOG SET STATUS='D', RESP_TIME='" + CommonUtil.now14()
                         + "', RESP_FILE_NAME='" + respName + "', LAST_MOD_TIME='" + CommonUtil.now14()
                         + "' WHERE REQ_ID='" + reqId + "'");
-                System.out.println("[buildGPSResFiles] " + respName);
+                System.out.println("[buildOLSResFiles] " + respName);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
-    // ==================== 4.4.4 putGPSResponse ====================
+    // ==================== 4.4.4 putOLSResponse ====================
 
     @Scheduled(initialDelay = 300000, fixedDelay = 3600000)
-    public void putGPSResponse() {
+    public void putOLSResponse() {
         File dir = new File(WORK_RESP_DIR);
         File[] files = dir.listFiles();
         if (files == null) return;
@@ -262,7 +262,7 @@ public class GpsBatchJobs {
             try {
                 copy(f, new File(SFTP_INCOMING_DIR, f.getName()));
                 f.delete();
-                System.out.println("[putGPSResponse] upload " + f.getName());
+                System.out.println("[putOLSResponse] upload " + f.getName());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -304,10 +304,10 @@ public class GpsBatchJobs {
         }
     }
 
-    // ==================== 4.4.5 GPSChargeMonitor (每12小時) ====================
+    // ==================== 4.4.5 OLSChargeMonitor (每12小時) ====================
 
     @Scheduled(initialDelay = 420000, fixedDelay = 43200000)
-    public void gpsChargeMonitor() {
+    public void olsChargeMonitor() {
         try {
             // CSP 回覆扣款失敗 -> Mail 通知 BPM 群組
             List<Map<String, Object>> fails = DBUtil.jdbc
@@ -330,11 +330,11 @@ public class GpsBatchJobs {
         }
     }
 
-    // ==================== 4.4.6/4.4.8 getGPSReconfiles + reconGPSDaily ====================
+    // ==================== 4.4.6/4.4.8 getOLSReconfiles + reconOLSDaily ====================
     // 抓檔跟對帳先合在同一個 method, 反正都要跑 (TODO 之後拆開)
 
     @Scheduled(initialDelay = 480000, fixedDelay = 86400000)
-    public void reconGPSDaily() {
+    public void reconOLSDaily() {
         List<File> files = new ArrayList<File>();
         walk(new File(SFTP_RECON_DIR), files);
         for (File f : files) {
@@ -443,13 +443,13 @@ public class GpsBatchJobs {
                     if (hit == 0) {
                         anyDiff = true;
                         sqe++;
-                        System.out.println("[ALERT][MAIL] daily recon 102 No GPS data txid=" + tx.get("TXID"));
+                        System.out.println("[ALERT][MAIL] daily recon 102 No OLS data txid=" + tx.get("TXID"));
                         DBUtil.jdbc.update("INSERT INTO MWP_CP_RECON_DAILY_DETAIL (RECON_ID, RECON_SEQ_NUM, MERCHANT_ID, BILLING_AGREEMENT_ID, CORRELATION_ID, SQE_NUM, TXID, STATUS, ROUND_AMOUNT, CURRENCY, TIMESTAMP, EVENT_RESPONSE, EVENT_RESPONSE_DESCRIPTION, CREATE_TIME, RECON_RESULT, RECON_MESSAGE) VALUES ('"
                                 + reconId + "','" + seq + "','" + MERCHANT + "','" + BILLING_AGREEMENT + "','"
                                 + tx.get("MEMO") + "'," + sqe + ",'" + tx.get("TXID") + "','" + tx.get("TX_STATUS")
                                 + "'," + ((Number) tx.get("AMOUNT")).longValue() + ",'TWD','" + tx.get("BILL_CSPTIME")
                                 + "','" + tx.get("RETURN_CODE") + "','" + tx.get("RETURN_MSG") + "','"
-                                + CommonUtil.now14() + "','102','No GPS data')");
+                                + CommonUtil.now14() + "','102','No OLS data')");
                     }
                 }
                 List<Map<String, Object>> myRefunds = DBUtil.jdbc.queryForList(
@@ -462,12 +462,12 @@ public class GpsBatchJobs {
                     if (hit == 0) {
                         anyDiff = true;
                         sqe++;
-                        System.out.println("[ALERT][MAIL] daily recon 202 No GPS data txid=" + rf.get("TXID"));
+                        System.out.println("[ALERT][MAIL] daily recon 202 No OLS data txid=" + rf.get("TXID"));
                         DBUtil.jdbc.update("INSERT INTO MWP_CP_RECON_DAILY_DETAIL (RECON_ID, RECON_SEQ_NUM, MERCHANT_ID, BILLING_AGREEMENT_ID, SQE_NUM, TXID, STATUS, ROUND_AMOUNT, CURRENCY, TIMESTAMP, CREATE_TIME, RECON_RESULT, RECON_MESSAGE) VALUES ('"
                                 + reconId + "','" + seq + "','" + MERCHANT + "','" + BILLING_AGREEMENT + "'," + sqe
                                 + ",'" + rf.get("TXID") + "','" + rf.get("REFUND_STATUS") + "',"
                                 + ((Number) rf.get("AMOUNT")).longValue() + ",'TWD','" + rf.get("REFUND_DATE") + "','"
-                                + CommonUtil.now14() + "','202','No GPS data')");
+                                + CommonUtil.now14() + "','202','No OLS data')");
                     }
                 }
 
@@ -486,7 +486,7 @@ public class GpsBatchJobs {
                 if (anyDiff) {
                     System.out.println("[ALERT][MAIL to Telco] daily recon " + date + " has diff, count=" + diffCount);
                 }
-                System.out.println("[reconGPSDaily] " + fn + " done, diff=" + diffCount);
+                System.out.println("[reconOLSDaily] " + fn + " done, diff=" + diffCount);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -504,11 +504,11 @@ public class GpsBatchJobs {
         return new String[] { start, end };
     }
 
-    // ==================== 4.4.7/4.4.9 getGPSMonthlyInvoice + reconGPSMonthly ====================
+    // ==================== 4.4.7/4.4.9 getOLSMonthlyInvoice + reconOLSMonthly ====================
     // 跟 daily 邏輯差不多, 從 daily copy 過來改的 (2013/4 [人員B])
 
     @Scheduled(initialDelay = 540000, fixedDelay = 86400000)
-    public void reconGPSMonthly() {
+    public void reconOLSMonthly() {
         List<File> files = new ArrayList<File>();
         walk(new File(SFTP_MONTHLY_DIR), files);
         for (File f : files) {
@@ -608,12 +608,12 @@ public class GpsBatchJobs {
                     if (hit == 0) {
                         anyDiff = true;
                         sqe++;
-                        System.out.println("[ALERT][MAIL] monthly recon 102 No GPS data txid=" + tx.get("TXID"));
+                        System.out.println("[ALERT][MAIL] monthly recon 102 No OLS data txid=" + tx.get("TXID"));
                         DBUtil.jdbc.update("INSERT INTO MWP_CP_RECON_MONTHLY_DETAIL (RECON_ID, RECON_SEQ_NUM, MERCHANT_ID, BILLING_AGREEMENT_ID, CORRELATION_ID, SQE_NUM, TXID, EVENT, ROUND_AMOUNT, CURRENCY, TIMESTAMP, CREATE_TIME, RECON_RESULT, RECON_MESSAGE) VALUES ('"
                                 + reconId + "','" + seq + "','" + MERCHANT + "','" + BILLING_AGREEMENT + "','"
                                 + tx.get("MEMO") + "'," + sqe + ",'" + tx.get("TXID") + "','" + tx.get("TX_STATUS")
                                 + "'," + ((Number) tx.get("AMOUNT")).longValue() + ",'TWD','" + tx.get("BILL_CSPTIME")
-                                + "','" + CommonUtil.now14() + "','102','No GPS data')");
+                                + "','" + CommonUtil.now14() + "','102','No OLS data')");
                     }
                 }
                 List<Map<String, Object>> myRefunds = DBUtil.jdbc.queryForList(
@@ -630,7 +630,7 @@ public class GpsBatchJobs {
                                 + reconId + "','" + seq + "','" + MERCHANT + "','" + BILLING_AGREEMENT + "'," + sqe
                                 + ",'" + rf.get("TXID") + "','" + rf.get("REFUND_STATUS") + "',"
                                 + ((Number) rf.get("AMOUNT")).longValue() + ",'TWD','" + rf.get("REFUND_DATE") + "','"
-                                + CommonUtil.now14() + "','202','No GPS data')");
+                                + CommonUtil.now14() + "','202','No OLS data')");
                     }
                 }
 
@@ -642,7 +642,7 @@ public class GpsBatchJobs {
                         + reconId + "','" + MERCHANT + "','" + month + "01'," + cpCount + "," + myCount + ",'" + fn + "')");
                 DBUtil.jdbc.update("UPDATE MWP_CP_RECON_MONTHLY_LOG SET STATUS='" + (anyDiff ? "F" : "D")
                         + "' WHERE FILE_NAME='" + fn + "'");
-                System.out.println("[reconGPSMonthly] " + fn + " done, diff=" + anyDiff);
+                System.out.println("[reconOLSMonthly] " + fn + " done, diff=" + anyDiff);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -660,10 +660,10 @@ public class GpsBatchJobs {
         return new String[] { start, end };
     }
 
-    // ==================== 4.4.10 reconGPSSummary (月拆帳總表, 抓回來放 nas 供下載) ====================
+    // ==================== 4.4.10 reconOLSSummary (月拆帳總表, 抓回來放 nas 供下載) ====================
 
     @Scheduled(initialDelay = 600000, fixedDelay = 86400000)
-    public void reconGPSSummary() {
+    public void reconOLSSummary() {
         List<File> files = new ArrayList<File>();
         walk(new File(SFTP_MONTHLY_DIR), files);
         for (File f : files) {
@@ -673,7 +673,7 @@ public class GpsBatchJobs {
                 dest.getParentFile().mkdirs();
                 if (!dest.exists()) {
                     copy(f, dest);
-                    System.out.println("[reconGPSSummary] fetched " + f.getName());
+                    System.out.println("[reconOLSSummary] fetched " + f.getName());
                 }
             } catch (Exception e) {
                 e.printStackTrace();

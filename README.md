@@ -1,4 +1,4 @@
-# new-pay OnlineStore(GPS) 遺留系統 Monorepo
+# new-pay OnlineStore(OLS) 遺留系統 Monorepo
 
 依 `new-pay_OnlineStore_FSD.md` / `new-pay_OnlineStore_SD.md` 實作的電信帳單代收（DCB）系統。
 **這是刻意保留技術債的 workshop 教材**：可以執行、功能符合規格書核心流程，但架構混亂、無任何測試，適合作為 AI 輔助重構的練習對象。技術債清單見 `TECH_DEBT_NOTES.md`。
@@ -75,7 +75,7 @@ cd <repo root>
 ## 4. 各功能操作
 
 ### 4.1 交易報表查詢（SA/CP，FSD 4.6.1）
-選日期區間（可到小時 00~23）、商家、時間類型（交易時間 / 授權時間-只限GPS）後按「查詢」。畫面僅顯示 10 筆。
+選日期區間（可到小時 00~23）、商家、時間類型（交易時間 / 授權時間-只限OLS）後按「查詢」。畫面僅顯示 10 筆。
 
 ![交易報表](docs/screenshots/03-report-trans.png)
 
@@ -83,7 +83,7 @@ cd <repo root>
 
 ![退款報表](docs/screenshots/04-report-refund.png)
 
-### 4.3 GPS 對帳結果查詢（SA，FSD 4.6.3 / 4.6.4）
+### 4.3 OLS 對帳結果查詢（SA，FSD 4.6.3 / 4.6.4）
 類型選「每日對帳」或「每月對帳」，輸入區間查詢；下方可用 RECON_ID（如 `R20260915`）查差異明細（對帳正常時明細為 0 筆）。
 
 ![對帳查詢](docs/screenshots/05-recon.png)
@@ -109,7 +109,7 @@ cd <repo root>
 B=http://localhost:8099
 
 # Association（模擬 Mpush 簡訊）
-curl "$B/servlet/SMSPushMOGPS?msisdn=0912345678&content=DCB_ASSOCIATION:SUT123"
+curl "$B/servlet/SMSPushMOOLS?msisdn=0912345678&content=DCB_ASSOCIATION:SUT123"
 
 # getProvisioning / Auth（SOAP-like XML）
 curl -X POST $B/soap/getProvisioning -H "Content-Type: text/xml" -d '<GetProvisioningRequest><OperatorUserToken>U0001</OperatorUserToken><BillingAgreementId>TELCO_TW</BillingAgreementId><UserLocale>ZH-TW</UserLocale><CorrelationId>P0001</CorrelationId></GetProvisioningRequest>'
@@ -120,7 +120,7 @@ curl "$B/batch/run?job=all"
 
 # 日對帳（&mismatch=true 可注入金額差異觸發告警）
 curl "$B/fakeols/genReconFile"
-curl "$B/batch/run?job=reconGPSDaily"
+curl "$B/batch/run?job=reconOLSDaily"
 ```
 
 ## 6. 測試資料（backend data.sql）
@@ -139,6 +139,6 @@ curl "$B/batch/run?job=reconGPSDaily"
 
 - SOAP 用手刻 XML over HTTP 模擬（無 WSDL/namespace），欄位名稱依 FSD 敘述自訂
 - Batch API 檔案格式為自訂簡化 CSV；PGP 加解密未實作（TODO 註記在程式裡）
-- `MWP_GPS_REQ_LOG.FILE_NAME` 由 spec 的 20 放寬為 80（檔名放不下）
+- `MWP_OLS_REQ_LOG.FILE_NAME` 由 spec 的 20 放寬為 80（檔名放不下）
 - 對帳檔多檔切分（-of-）只實作單檔路徑
 - Portal 無真正權限控管、Finance 審核作業（4.6.7）未提供

@@ -11,13 +11,13 @@ import com.telco.mwp.util.CommonUtil;
 import com.telco.mwp.util.DBUtil;
 
 /**
- * SDK API: cancelGPSTransaction (SD 4.3.6)
- * Com.telco.mwp.servlet.CancelGPSTX
+ * SDK API: cancelOLSTransaction (SD 4.3.6)
+ * Com.telco.mwp.servlet.CancelOLSTX
  */
 @RestController
-public class CancelGPSTX {
+public class CancelOLSTX {
 
-    @PostMapping(value = "/servlet/CancelGPSTX", produces = "text/xml;charset=UTF-8")
+    @PostMapping(value = "/servlet/CancelOLSTX", produces = "text/xml;charset=UTF-8")
     public String cancel(@RequestBody String body) {
         String merchantID = CommonUtil.cut(body, "merchantID");
         String merchantPassword = CommonUtil.cut(body, "merchantPassword");
