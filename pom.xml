@@ -27,6 +27,6 @@
 
     <modules>
         <module>backend</module>
-        <module>portal</module>
+        <!-- portal uses Spring Boot 4.x / JDK 17 and is built independently. -->
     </modules>
 </project>

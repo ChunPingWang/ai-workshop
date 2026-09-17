@@ -19,7 +19,7 @@ payment-fubon-bank-workshop/
 | 模組 | 技術 |
 |---|---|
 | backend | JDK 8 + Spring Boot 2.7.18 + JdbcTemplate + H2（Oracle 模式，in-memory，重啟即重置） |
-| portal | JDK 8 + Spring Boot 2.7.18 + Thymeleaf + HTML + jQuery 1.12.4 |
+| portal | JDK 17 + Spring Boot 4.1.1 + Thymeleaf + HTML + jQuery 1.12.4 |
 
 外部系統均為內建模擬：OLS SFTP → 本機 `backend/data/` 資料夾（略過 PGP）、OLS DCB API 與 CSP → fake endpoint / 寫死名單。
 
@@ -38,7 +38,7 @@ JAVA_HOME=~/.sdkman/candidates/java/8.0.482-zulu mvn spring-boot:run
 
 # 視窗二: Portal
 cd portal
-JAVA_HOME=~/.sdkman/candidates/java/8.0.482-zulu mvn spring-boot:run
+JAVA_HOME=~/.sdkman/candidates/java/21.0.11-amzn mvn spring-boot:run
 ```
 
 | 服務 | 位置 |

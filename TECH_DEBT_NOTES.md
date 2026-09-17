@@ -40,7 +40,7 @@
 24. **檔案 IO 無 try-with-resources**（JDK7 語法明明可用），例外路徑會漏 file handle；`renameTo` 回傳值沒檢查。
 25. **排程與手動觸發共用同一批非同步不安全的方法**，`@Scheduled` 多執行緒下（reqSeq++ 等）會出事；批次沒有重入鎖。
 26. **註解裡的口述歷史**：`<[人員A]>`、「先這樣」、「之後再說」、被註解掉的 CONFIG 值——典型的 tribal knowledge。
-27. **無單元測試、無整合測試、無 CI**。`mvn test` 是空的。
+27. **無單元測試、無整合測試、無 CI**。`mvn test` 是空的。（Portal 已以 `portal-e2e` 建立升級驗證基線。）
 
 ## E. Portal（前端）追加
 
