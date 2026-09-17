@@ -1,0 +1,23 @@
+{
+  "name": "portal-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "new-pay Portal 的 BDD 端對端測試（Playwright + playwright-bdd + Mockoon 假後端）",
+  "scripts": {
+    "test": "bddgen && playwright test",
+    "test:ui": "bddgen && playwright test --ui",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit",
+    "mock:build": "node mockoon/build.js",
+    "mock:start": "node mockoon/build.js && mockoon-cli start --data mockoon/newpay-backend.json --port 8099",
+    "mock:check": "node mockoon/check.js"
+  },
+  "devDependencies": {
+    "@mockoon/cli": "^9.2.0",
+    "@mockoon/commons": "^9.2.0",
+    "@playwright/test": "^1.58.0",
+    "@types/node": "^24.0.0",
+    "playwright-bdd": "^8.4.0",
+    "typescript": "^5.9.2"
+  }
+}
