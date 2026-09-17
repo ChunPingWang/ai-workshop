@@ -6,3 +6,6 @@ nohup.out
 
 # 原始 Word 文件不入版控
 *.doc
+
+# IDE
+.idea/
