@@ -1,0 +1,70 @@
+{
+  "description": "銀行帳戶",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "cp/bankacc/list",
+      "documentation": "",
+      "responses": [
+        {
+          "label": "已註冊",
+          "default": true,
+          "bodyFile": "bankacc.html"
+        },
+        {
+          "label": "空清單",
+          "default": false,
+          "bodyFile": "bankacc-empty.json",
+          "rules": [
+            {
+              "target": "query",
+              "key": "merchantId",
+              "operator": "equals",
+              "value": "E000009"
+            }
+          ]
+        },
+        {
+          "label": "500",
+          "default": false,
+          "body": "failure",
+          "rules": [
+            {
+              "target": "query",
+              "key": "merchantId",
+              "operator": "equals",
+              "value": "E500000"
+            }
+          ],
+          "status": 500,
+          "contentType": "text/plain"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "cp/bankacc/save",
+      "documentation": "",
+      "responses": [
+        {
+          "label": "成功",
+          "default": true,
+          "body": "OK"
+        },
+        {
+          "label": "失敗",
+          "default": false,
+          "body": "FAIL Unique index",
+          "rules": [
+            {
+              "target": "body",
+              "key": "bankCode",
+              "operator": "equals",
+              "value": "999"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

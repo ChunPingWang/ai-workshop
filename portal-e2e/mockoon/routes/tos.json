@@ -1,0 +1,136 @@
+{
+  "description": "服務條款",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "sa/tos/query",
+      "documentation": "",
+      "responses": [
+        {
+          "label": "無條款",
+          "default": true,
+          "bodyFile": "tos-empty.json"
+        },
+        {
+          "label": "已有v2",
+          "default": false,
+          "bodyFile": "tos-existing.json",
+          "rules": [
+            {
+              "target": "query",
+              "key": "merchantID",
+              "operator": "equals",
+              "value": "E000001"
+            }
+          ]
+        },
+        {
+          "label": "非JSON",
+          "default": false,
+          "bodyFile": "tos-json-invalid.txt",
+          "rules": [
+            {
+              "target": "query",
+              "key": "merchantID",
+              "operator": "equals",
+              "value": "E999JSON"
+            }
+          ]
+        },
+        {
+          "label": "500",
+          "default": false,
+          "body": "failure",
+          "rules": [
+            {
+              "target": "query",
+              "key": "merchantID",
+              "operator": "equals",
+              "value": "E500000"
+            }
+          ],
+          "status": 500,
+          "contentType": "text/plain"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "sa/tos/save",
+      "documentation": "",
+      "responses": [
+        {
+          "label": "成功v1",
+          "default": true,
+          "body": "OK version=1 url=http://localhost:8099/getToS.jsp?merchantID=E000002&version=1"
+        },
+        {
+          "label": "成功v1：空內容",
+          "default": false,
+          "body": "OK version=1 empty-content",
+          "rules": [
+            {
+              "target": "body",
+              "key": "merchantID",
+              "operator": "equals",
+              "value": "E000002"
+            },
+            {
+              "target": "body",
+              "key": "content",
+              "operator": "equals",
+              "value": ""
+            }
+          ],
+          "rulesOperator": "AND"
+        },
+        {
+          "label": "成功v1：非十四碼日期",
+          "default": false,
+          "body": "OK version=1 invalid-startDate",
+          "rules": [
+            {
+              "target": "body",
+              "key": "merchantID",
+              "operator": "equals",
+              "value": "E000002"
+            },
+            {
+              "target": "body",
+              "key": "startDate",
+              "operator": "equals",
+              "value": "1"
+            }
+          ],
+          "rulesOperator": "AND"
+        },
+        {
+          "label": "成功v3",
+          "default": false,
+          "body": "OK version=3 url=http://localhost:8099/getToS.jsp?merchantID=E000001&version=3",
+          "rules": [
+            {
+              "target": "body",
+              "key": "merchantID",
+              "operator": "equals",
+              "value": "E000001"
+            }
+          ]
+        },
+        {
+          "label": "失敗",
+          "default": false,
+          "body": "FAIL Value too long",
+          "rules": [
+            {
+              "target": "body",
+              "key": "content",
+              "operator": "regex",
+              "value": "FAIL"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

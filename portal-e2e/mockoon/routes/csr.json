@@ -1,0 +1,58 @@
+{
+  "description": "CSR",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "csr/trans",
+      "documentation": "",
+      "responses": [
+        {
+          "label": "有交易與退款",
+          "default": true,
+          "bodyFile": "csr.html"
+        },
+        {
+          "label": "無資料",
+          "default": false,
+          "bodyFile": "csr-empty.html",
+          "rules": [
+            {
+              "target": "query",
+              "key": "msisdn",
+              "operator": "equals",
+              "value": "0900000000"
+            }
+          ]
+        },
+        {
+          "label": "超過10筆",
+          "default": false,
+          "bodyFile": "report-11.html",
+          "rules": [
+            {
+              "target": "query",
+              "key": "msisdn",
+              "operator": "equals",
+              "value": "0910000010"
+            }
+          ]
+        },
+        {
+          "label": "500",
+          "default": false,
+          "body": "failure",
+          "rules": [
+            {
+              "target": "query",
+              "key": "msisdn",
+              "operator": "equals",
+              "value": "0950000000"
+            }
+          ],
+          "status": 500,
+          "contentType": "text/plain"
+        }
+      ]
+    }
+  ]
+}

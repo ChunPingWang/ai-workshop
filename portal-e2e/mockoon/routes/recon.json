@@ -1,0 +1,108 @@
+{
+  "description": "對帳",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "sa/report/reconDaily",
+      "documentation": "",
+      "responses": [
+        {
+          "label": "每日有資料",
+          "default": true,
+          "bodyFile": "recon-daily.html"
+        },
+        {
+          "label": "查無資料",
+          "default": false,
+          "bodyFile": "report-empty.html",
+          "rules": [
+            {
+              "target": "query",
+              "key": "from",
+              "operator": "equals",
+              "value": "20990101"
+            }
+          ]
+        },
+        {
+          "label": "500",
+          "default": false,
+          "body": "backend failure",
+          "rules": [
+            {
+              "target": "query",
+              "key": "from",
+              "operator": "equals",
+              "value": "E500000"
+            }
+          ],
+          "status": 500,
+          "contentType": "text/plain"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "sa/report/reconMonthly",
+      "documentation": "",
+      "responses": [
+        {
+          "label": "每月有資料",
+          "default": true,
+          "bodyFile": "recon-monthly.html"
+        },
+        {
+          "label": "查無資料",
+          "default": false,
+          "bodyFile": "report-empty.html",
+          "rules": [
+            {
+              "target": "query",
+              "key": "from",
+              "operator": "equals",
+              "value": "20990101"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "sa/report/reconDailyDetail",
+      "documentation": "",
+      "responses": [
+        {
+          "label": "無差異",
+          "default": true,
+          "bodyFile": "recon-detail-empty.html"
+        },
+        {
+          "label": "有差異",
+          "default": false,
+          "bodyFile": "recon-detail.html",
+          "rules": [
+            {
+              "target": "query",
+              "key": "reconId",
+              "operator": "equals",
+              "value": "R20260916"
+            }
+          ]
+        },
+        {
+          "label": "R20260915無差異",
+          "default": false,
+          "bodyFile": "recon-detail-empty.html",
+          "rules": [
+            {
+              "target": "query",
+              "key": "reconId",
+              "operator": "equals",
+              "value": "R20260915"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

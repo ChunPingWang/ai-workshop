@@ -101,3 +101,15 @@ npm run typecheck                        # tsc --noEmit
 這套測試的目的是替 Portal 升級 Spring Boot 4.x 當安全網：升級前跑一次全綠當基線，
 升級後再跑一次，同一套 feature 通過就代表使用者看得到的行為沒變。
 測試只依賴 Portal 對外的 HTML 與 ajax 路徑，不依賴任何 Spring 內部 API。
+
+## Mockoon 情境來源（gen-gherkin）
+
+| 功能 | Backend route source | 主要觸發值 |
+|---|---|---|
+| 報表／退款 | `mockoon/routes/report.json` | `E000002`、`E010000`、`E011000`、`E500000`、`from=20990101` |
+| 對帳 | `mockoon/routes/recon.json` | `from=20990101`、`reconId=R20260915/R20260916` |
+| 服務條款 | `mockoon/routes/tos.json` | `E000001`、`E000002`、`E999JSON`、`content` 含 `FAIL` |
+| 銀行帳戶 | `mockoon/routes/bankacc.json` | `E000009`、`E500000`、`bankCode=999` |
+| CSR | `mockoon/routes/csr.json` | `0900000000`、`0910000010`、`0950000000` |
+
+每個 backend route 都只有一個 `default` response；`newpay-backend.json` 僅由 `npm run mock:build` 產生。

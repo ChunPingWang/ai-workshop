@@ -1,0 +1,124 @@
+{
+  "description": "報表與退款 backend",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "sa/report/trans",
+      "documentation": "",
+      "responses": [
+        {
+          "label": "有資料",
+          "default": true,
+          "bodyFile": "report-trans.html"
+        },
+        {
+          "label": "查無資料",
+          "default": false,
+          "bodyFile": "report-empty.html",
+          "rules": [
+            {
+              "target": "query",
+              "key": "merchantId",
+              "operator": "equals",
+              "value": "E000002"
+            }
+          ]
+        },
+        {
+          "label": "剛好10筆",
+          "default": false,
+          "bodyFile": "report-10.html",
+          "rules": [
+            {
+              "target": "query",
+              "key": "merchantId",
+              "operator": "equals",
+              "value": "E010000"
+            }
+          ]
+        },
+        {
+          "label": "超過10筆",
+          "default": false,
+          "bodyFile": "report-11.html",
+          "rules": [
+            {
+              "target": "query",
+              "key": "merchantId",
+              "operator": "equals",
+              "value": "E011000"
+            }
+          ]
+        },
+        {
+          "label": "授權時間",
+          "default": false,
+          "bodyFile": "report-trans-auth.html",
+          "rules": [
+            {
+              "target": "query",
+              "key": "timeType",
+              "operator": "equals",
+              "value": "auth"
+            }
+          ]
+        },
+        {
+          "label": "500",
+          "default": false,
+          "body": "backend failure",
+          "rules": [
+            {
+              "target": "query",
+              "key": "merchantId",
+              "operator": "equals",
+              "value": "E500000"
+            }
+          ],
+          "status": 500,
+          "contentType": "text/plain"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "sa/report/refund",
+      "documentation": "",
+      "responses": [
+        {
+          "label": "退款有資料",
+          "default": true,
+          "bodyFile": "report-refund.html"
+        },
+        {
+          "label": "查無資料",
+          "default": false,
+          "bodyFile": "report-empty.html",
+          "rules": [
+            {
+              "target": "query",
+              "key": "from",
+              "operator": "equals",
+              "value": "20990101"
+            }
+          ]
+        },
+        {
+          "label": "404",
+          "default": false,
+          "body": "not found",
+          "rules": [
+            {
+              "target": "query",
+              "key": "from",
+              "operator": "equals",
+              "value": "40400000"
+            }
+          ],
+          "status": 404,
+          "contentType": "text/plain"
+        }
+      ]
+    }
+  ]
+}
