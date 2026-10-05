@@ -8,6 +8,8 @@ import { defineBddConfig } from 'playwright-bdd';
  * - Portal 預設要你自己先起：cd ../portal && mvn spring-boot:run
  *   設 START_PORTAL=1 會由 Playwright 代為啟動（需要 JAVA_HOME 指到 JDK 8，升級後為 JDK 17+）。
  * - 設 BASE_URL 可測部署在別處的 Portal；設 NO_MOCK=1 可不啟動 Mockoon（例如要打真後端）。
+ * - 無法安裝 Playwright 自帶 Chromium 的環境：設 BROWSER_CHANNEL=msedge（或 chrome）改用系統瀏覽器，
+ *   需 Edge/Chrome 主版號 ≥ 本版 Playwright 綁定的 Chromium 主版號；或用 CHROMIUM_PATH 直接指執行檔。
  */
 const BASE_URL = process.env.BASE_URL ?? 'http://localhost:8098';
 const MOCK_PORT = Number(process.env.MOCK_PORT ?? 8099);
@@ -58,13 +60,17 @@ export default defineConfig({
     testIdAttribute: 'data-testid',
     trace: 'on',
     screenshot: 'on',
-    video: 'on',
+    // 錄影需要 Playwright 自帶的 ffmpeg（playwright install 下載）；
+    // 用系統瀏覽器（裝不了 Chromium 的環境）時自動關閉，trace 內的逐步截圖仍在
+    video: process.env.BROWSER_CHANNEL || process.env.CHROMIUM_PATH ? 'off' : 'on',
   },
   projects: [
     {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
+        // BROWSER_CHANNEL=msedge|chrome → 用系統已安裝的 Edge/Chrome（公司環境裝不了 Chromium 時用）
+        ...(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {}),
         ...(process.env.CHROMIUM_PATH
           ? { launchOptions: { executablePath: process.env.CHROMIUM_PATH } }
           : {}),

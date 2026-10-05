@@ -94,7 +94,8 @@ npm run typecheck                        # tsc --noEmit
 | `START_PORTAL=1` | 由 Playwright 執行 `mvn -f ../portal/pom.xml spring-boot:run`（需 JAVA_HOME 正確） |
 | `NO_MOCK=1` | 不啟動 Mockoon，例如要對真 backend 跑 |
 | `MOCK_PORT` | Mockoon 埠號，預設 8099（改了 Portal 也要改 BACKEND） |
-| `CHROMIUM_PATH` | 公司環境無法 `playwright install` 時指向既有 Chrome |
+| `BROWSER_CHANNEL` | 用系統已安裝的瀏覽器跑：`msedge` 或 `chrome`（無法安裝 Playwright Chromium 時用；主版號需 ≥ 本版 Playwright 綁定的 Chromium） |
+| `CHROMIUM_PATH` | 同上的後備方案：直接指向瀏覽器執行檔完整路徑 |
 
 ## 與 Spring Boot 升級的關係
 
