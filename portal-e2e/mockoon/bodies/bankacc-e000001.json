@@ -1,0 +1,18 @@
+[
+  {
+    "MERCHANT_ID": "E000001",
+    "BANK_CODE": "007",
+    "BANK_ACC": "1234567890123456",
+    "CURRENCY": "USD",
+    "IS_DOMESTIC": "N",
+    "STATUS": "A"
+  },
+  {
+    "MERCHANT_ID": "E000001",
+    "BANK_CODE": "012",
+    "BANK_ACC": "1234567890123",
+    "CURRENCY": "NTD",
+    "IS_DOMESTIC": "Y",
+    "STATUS": "W"
+  }
+]

@@ -1,68 +1,44 @@
 {
-  "description": "銀行帳戶",
+  "description": "US-BNK-*（SRS 4.7）。/cp/bankacc/list 回 JSON、/cp/bankacc/save 回 OK / FAIL 純文字。",
   "routes": [
     {
       "method": "GET",
       "path": "cp/bankacc/list",
-      "documentation": "",
+      "documentation": "E000001 → 2 筆（007/USD/國外/A 對齊 SRS 初始資料、012/NTD/國內/W）；E500000 → 後端 500；其他 → []",
       "responses": [
-        {
-          "label": "已註冊",
-          "default": true,
-          "bodyFile": "bankacc.html"
-        },
-        {
-          "label": "空清單",
-          "default": false,
-          "bodyFile": "bankacc-empty.json",
-          "rules": [
-            {
-              "target": "query",
-              "key": "merchantId",
-              "operator": "equals",
-              "value": "E000009"
-            }
-          ]
-        },
-        {
-          "label": "500",
-          "default": false,
-          "body": "failure",
-          "rules": [
-            {
-              "target": "query",
-              "key": "merchantId",
-              "operator": "equals",
-              "value": "E500000"
-            }
-          ],
-          "status": 500,
-          "contentType": "text/plain"
-        }
+        { "label": "無帳戶（預設）", "default": true, "status": 200, "bodyFile": "empty-array.json" },
+        { "label": "E000001 有 2 筆帳戶", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E000001" }], "status": 200, "bodyFile": "bankacc-e000001.json" },
+        { "label": "後端 500（P-BNK-11 非 JSON 路徑）", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E500000" }], "status": 500, "contentType": "text/plain;charset=UTF-8", "body": "Internal Server Error" }
       ]
     },
     {
       "method": "POST",
       "path": "cp/bankacc/save",
-      "documentation": "",
+      "documentation": "註冊。bankCode=999 → FAIL；bankCode 空值 → FAIL NULL not allowed（P-COM-32）；777（須 isDomestic=N 且 currency=USD）→ OK FOREIGN-USD；776（須 isDomestic=Y 且 currency=NTD）→ OK DOMESTIC-NTD（P-BNK-04 參數檢查）",
       "responses": [
+        { "label": "OK（預設）", "default": true, "status": 200, "contentType": "text/plain;charset=UTF-8", "body": "OK",
+          "example": { "form": { "merchantId": "E000001", "bankCode": "822", "bankAcc": "0011223344", "currency": "NTD", "isDomestic": "Y" } } },
+        { "label": "後端失敗（P-BNK-07）", "rules": [{ "target": "body", "key": "bankCode", "operator": "equals", "value": "999" }], "status": 200, "contentType": "text/plain;charset=UTF-8", "body": "FAIL Value too long for column BANK_CODE" },
+        { "label": "銀行代碼空值 → FAIL（P-COM-32）", "rules": [{ "target": "body", "key": "bankCode", "operator": "equals", "value": "" }], "status": 200, "contentType": "text/plain;charset=UTF-8", "body": "FAIL NULL not allowed for column BANK_CODE" },
         {
-          "label": "成功",
-          "default": true,
-          "body": "OK"
+          "label": "參數檢查：外國銀行 + USD（isDomestic=N）",
+          "rules": [
+            { "target": "body", "key": "bankCode", "operator": "equals", "value": "777" },
+            { "target": "body", "key": "isDomestic", "operator": "equals", "value": "N" },
+            { "target": "body", "key": "currency", "operator": "equals", "value": "USD" }
+          ],
+          "rulesOperator": "AND",
+          "status": 200, "contentType": "text/plain;charset=UTF-8", "body": "OK FOREIGN-USD"
         },
         {
-          "label": "失敗",
-          "default": false,
-          "body": "FAIL Unique index",
+          "label": "參數檢查：國內 + NTD（isDomestic=Y）",
           "rules": [
-            {
-              "target": "body",
-              "key": "bankCode",
-              "operator": "equals",
-              "value": "999"
-            }
-          ]
+            { "target": "body", "key": "bankCode", "operator": "equals", "value": "776" },
+            { "target": "body", "key": "isDomestic", "operator": "equals", "value": "Y" },
+            { "target": "body", "key": "currency", "operator": "equals", "value": "NTD" }
+          ],
+          "rulesOperator": "AND",
+          "status": 200, "contentType": "text/plain;charset=UTF-8", "body": "OK DOMESTIC-NTD"
         }
       ]
     }

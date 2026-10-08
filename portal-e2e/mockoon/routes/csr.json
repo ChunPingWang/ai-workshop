@@ -1,57 +1,15 @@
 {
-  "description": "CSR",
+  "description": "US-CSR-*（SRS 4.8）。回應是兩張 HTML 表格（交易 8 欄 + <hr/>Refunds: + 退款 8 欄）。",
   "routes": [
     {
       "method": "GET",
       "path": "csr/trans",
-      "documentation": "",
+      "documentation": "0912345678（預設）→ 2 筆交易＋1 筆退款；0900000000 → 兩張都 0 筆；0950000000 → 後端 500；0910000010 → 11 筆交易（畫面 10 列）",
       "responses": [
-        {
-          "label": "有交易與退款",
-          "default": true,
-          "bodyFile": "csr.html"
-        },
-        {
-          "label": "無資料",
-          "default": false,
-          "bodyFile": "csr-empty.html",
-          "rules": [
-            {
-              "target": "query",
-              "key": "msisdn",
-              "operator": "equals",
-              "value": "0900000000"
-            }
-          ]
-        },
-        {
-          "label": "超過10筆",
-          "default": false,
-          "bodyFile": "report-11.html",
-          "rules": [
-            {
-              "target": "query",
-              "key": "msisdn",
-              "operator": "equals",
-              "value": "0910000010"
-            }
-          ]
-        },
-        {
-          "label": "500",
-          "default": false,
-          "body": "failure",
-          "rules": [
-            {
-              "target": "query",
-              "key": "msisdn",
-              "operator": "equals",
-              "value": "0950000000"
-            }
-          ],
-          "status": 500,
-          "contentType": "text/plain"
-        }
+        { "label": "11 筆交易（畫面 10 列、total rows 11）", "rules": [{ "target": "query", "key": "msisdn", "operator": "equals", "value": "0910000010" }], "status": 200, "bodyFile": "csr-trans-11rows.html" },
+        { "label": "有資料（預設）", "default": true, "status": 200, "bodyFile": "csr-trans-rows.html" },
+        { "label": "查無資料", "rules": [{ "target": "query", "key": "msisdn", "operator": "equals", "value": "0900000000" }], "status": 200, "bodyFile": "csr-trans-empty.html" },
+        { "label": "後端 500", "rules": [{ "target": "query", "key": "msisdn", "operator": "equals", "value": "0950000000" }], "status": 500, "contentType": "text/plain;charset=UTF-8", "body": "Internal Server Error" }
       ]
     }
   ]

@@ -1,135 +1,28 @@
 {
-  "description": "服務條款",
+  "description": "US-TOS-*（SRS 4.6）。/sa/tos/query 回 JSON 陣列（版次降冪）、/sa/tos/save 回純文字。",
   "routes": [
     {
       "method": "GET",
       "path": "sa/tos/query",
-      "documentation": "",
+      "documentation": "merchantID 分流：E000001 已有 v2（2 版次）、E000003 含換行內容 v1、E500000 後端 500、E999JSON 回非 JSON；其他（含空字串、E000002）→ []",
       "responses": [
-        {
-          "label": "無條款",
-          "default": true,
-          "bodyFile": "tos-empty.json"
-        },
-        {
-          "label": "已有v2",
-          "default": false,
-          "bodyFile": "tos-existing.json",
-          "rules": [
-            {
-              "target": "query",
-              "key": "merchantID",
-              "operator": "equals",
-              "value": "E000001"
-            }
-          ]
-        },
-        {
-          "label": "非JSON",
-          "default": false,
-          "bodyFile": "tos-json-invalid.txt",
-          "rules": [
-            {
-              "target": "query",
-              "key": "merchantID",
-              "operator": "equals",
-              "value": "E999JSON"
-            }
-          ]
-        },
-        {
-          "label": "500",
-          "default": false,
-          "body": "failure",
-          "rules": [
-            {
-              "target": "query",
-              "key": "merchantID",
-              "operator": "equals",
-              "value": "E500000"
-            }
-          ],
-          "status": 500,
-          "contentType": "text/plain"
-        }
+        { "label": "尚無條款（預設）", "default": true, "status": 200, "bodyFile": "empty-array.json" },
+        { "label": "E000001 已有條款（最新 v2）", "rules": [{ "target": "query", "key": "merchantID", "operator": "equals", "value": "E000001" }], "status": 200, "bodyFile": "tos-e000001.json" },
+        { "label": "E000003 條款內容含換行", "rules": [{ "target": "query", "key": "merchantID", "operator": "equals", "value": "E000003" }], "status": 200, "bodyFile": "tos-e000003.json" },
+        { "label": "後端 500（P-TOS-15 非 JSON 路徑）", "rules": [{ "target": "query", "key": "merchantID", "operator": "equals", "value": "E500000" }], "status": 500, "contentType": "text/plain;charset=UTF-8", "body": "Internal Server Error" },
+        { "label": "回非 JSON（JSON.parse 失敗）", "rules": [{ "target": "query", "key": "merchantID", "operator": "equals", "value": "E999JSON" }], "status": 200, "contentType": "text/plain;charset=UTF-8", "body": "this is not json" }
       ]
     },
     {
       "method": "POST",
       "path": "sa/tos/save",
-      "documentation": "",
+      "documentation": "存檔。回應格式見 P-TOS-08：OK version=<n> url=<url>；merchantID=E000001 → OK version=3；content 含 FAIL → FAIL Value too long；content 空值 → FAIL NULL not allowed（P-COM-32）",
       "responses": [
-        {
-          "label": "成功v1",
-          "default": true,
-          "body": "OK version=1 url=http://localhost:8099/getToS.jsp?merchantID=E000002&version=1"
-        },
-        {
-          "label": "成功v1：空內容",
-          "default": false,
-          "body": "OK version=1 empty-content",
-          "rules": [
-            {
-              "target": "body",
-              "key": "merchantID",
-              "operator": "equals",
-              "value": "E000002"
-            },
-            {
-              "target": "body",
-              "key": "content",
-              "operator": "equals",
-              "value": ""
-            }
-          ],
-          "rulesOperator": "AND"
-        },
-        {
-          "label": "成功v1：非十四碼日期",
-          "default": false,
-          "body": "OK version=1 invalid-startDate",
-          "rules": [
-            {
-              "target": "body",
-              "key": "merchantID",
-              "operator": "equals",
-              "value": "E000002"
-            },
-            {
-              "target": "body",
-              "key": "startDate",
-              "operator": "equals",
-              "value": "1"
-            }
-          ],
-          "rulesOperator": "AND"
-        },
-        {
-          "label": "成功v3",
-          "default": false,
-          "body": "OK version=3 url=http://localhost:8099/getToS.jsp?merchantID=E000001&version=3",
-          "rules": [
-            {
-              "target": "body",
-              "key": "merchantID",
-              "operator": "equals",
-              "value": "E000001"
-            }
-          ]
-        },
-        {
-          "label": "失敗",
-          "default": false,
-          "body": "FAIL Value too long",
-          "rules": [
-            {
-              "target": "body",
-              "key": "content",
-              "operator": "regex",
-              "value": "FAIL"
-            }
-          ]
-        }
+        { "label": "新商家第一版（預設）", "default": true, "status": 200, "contentType": "text/plain;charset=UTF-8", "body": "OK version=1 url=http://localhost:8099/getToS.jsp?merchantID=E000002&version=1",
+          "example": { "form": { "merchantID": "E000002", "startDate": "20260101000000", "content": "第一版條款內容", "note": "" } } },
+        { "label": "E000001 建立第三版", "rules": [{ "target": "body", "key": "merchantID", "operator": "equals", "value": "E000001" }], "status": 200, "contentType": "text/plain;charset=UTF-8", "body": "OK version=3 url=http://localhost:8099/getToS.jsp?merchantID=E000001&version=3" },
+        { "label": "內容含 FAIL → 模擬後端失敗（P-TOS-12）", "rules": [{ "target": "body", "key": "content", "operator": "regex", "value": "FAIL" }], "status": 200, "contentType": "text/plain;charset=UTF-8", "body": "FAIL Value too long for column TOS_CONTENT" },
+        { "label": "內容空值 → FAIL（P-COM-32）", "rules": [{ "target": "body", "key": "content", "operator": "equals", "value": "" }], "status": 200, "contentType": "text/plain;charset=UTF-8", "body": "FAIL NULL not allowed for column TOS_CONTENT" }
       ]
     }
   ]
