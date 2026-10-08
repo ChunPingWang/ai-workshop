@@ -1,159 +1,110 @@
 @login
-Feature: 登入與共通行為
-  身為 Portal 使用者
-  我想要操作 登入與共通行為
-  以便驗證畫面行為與 backend 回應
+Feature: Portal 登入 (US-LGN-01〜04, SRS 4.1)
+  身為 SA / CP / CSR 使用者
+  我想要以固定測試帳號登入 new-pay Portal
+  以便進入對應的功能選單
 
   Background:
+    Given 我在登入頁
+
+  Scenario: 登入頁顯示標題與測試帳號提示且帳號欄位自動聚焦
+    # US-LGN-01 AC3（P-LGN-05）；提示文字見 SRS 4.1.1 畫面元素
+    Then 登入頁應該顯示標題 "登入"
+    And 頁面應該顯示說明 "測試帳號: sa/sa (SA Portal), cp/cp (Merchant Portal), csr/csr (CSR Portal)"
+    And 帳號欄位應該自動聚焦
+
+  @smoke
+  Scenario Outline: 三種角色都能用預設帳號登入
+    # US-LGN-01 AC1、AC2（P-LGN-01, P-LGN-02）
+    When 我輸入帳號 "<帳號>" 與密碼 "<密碼>" 並送出
+    Then 我應該看到功能選單
+    And 導覽列應該顯示登入者 "<帳號>"
+
+    Examples:
+      | 帳號 | 密碼 |
+      | sa  | sa  |
+      | cp  | cp  |
+      | csr | csr |
+
+  Scenario: 密碼錯誤時停留在登入頁並顯示錯誤
+    # US-LGN-02 AC1（P-LGN-03）
+    When 我輸入帳號 "sa" 與密碼 "wrong" 並送出
+    Then 我應該停留在登入頁
+    And 登入頁應該顯示錯誤訊息 "帳號或密碼錯誤"
+
+  Scenario: 帳號不存在時停留在登入頁並顯示錯誤
+    # US-LGN-02 AC1（P-LGN-03）
+    When 我輸入帳號 "nobody" 與密碼 "sa" 並送出
+    Then 我應該停留在登入頁
+    And 登入頁應該顯示錯誤訊息 "帳號或密碼錯誤"
+
+  @legacy
+  Scenario: 登入失敗後帳號欄位被清空
+    # US-LGN-02 AC2（P-LGN-04，現況如此：頁面重新渲染、欄位不回填）
+    When 我輸入帳號 "sa" 與密碼 "wrong" 並送出
+    Then 帳號欄位應該是空的
+
+  @legacy
+  Scenario Outline: 帳號或密碼空白仍會送出並顯示錯誤
+    # US-LGN-02 AC1（P-LGN-03：任一欄為空也是登入失敗）＋ US-COM-06 AC1（無前端驗證）
+    When 我輸入帳號 "<帳號>" 與密碼 "<密碼>" 並送出
+    Then 我應該停留在登入頁
+    And 登入頁應該顯示錯誤訊息 "帳號或密碼錯誤"
+
+    Examples:
+      | 帳號 | 密碼 |
+      |      | sa   |
+      | sa   |      |
+      |      |      |
+
+  Scenario: 帳號大小寫不同視為錯誤帳號
+    # US-LGN-01 AC1（P-LGN-01：大小寫敏感，SA 失敗）
+    When 我輸入帳號 "SA" 與密碼 "sa" 並送出
+    Then 我應該停留在登入頁
+    And 登入頁應該顯示錯誤訊息 "帳號或密碼錯誤"
+
+  @legacy
+  Scenario: 帳號前後有空白視為錯誤帳號
+    # US-LGN-01 AC1（P-LGN-01：完全相符才成功，沒有 trim）
+    When 我輸入帳號 " sa " 與密碼 "sa" 並送出
+    Then 我應該停留在登入頁
+    And 登入頁應該顯示錯誤訊息 "帳號或密碼錯誤"
+
+  Scenario: 在密碼欄按 Enter 等同按登入
+    When 我輸入帳號 "sa" 與密碼 "sa" 並在密碼欄按 Enter
+    Then 我應該看到功能選單
+
+  @legacy
+  Scenario: 已登入再開登入頁仍顯示登入表單
+    # US-LGN-04 AC1（P-LGN-06，現況如此：/login 不檢查 session）
     Given 我以 "sa" 身分登入 Portal
-    And 我在登入與共通行為頁
+    When 我直接開啟 "/login" 頁面
+    Then 我應該停留在登入頁
 
-  Scenario: C-1 未登入直接開所有功能頁會導回登入頁
-    Given 我已進入此功能頁
-    When 我在未登入狀態分別開啟 /report、/recon、/tos、/bankacc、/csr 與 /
-    Then 畫面應該顯示：未登入直接開所有功能頁會導回登入頁
-
-  @legacy
-  Scenario: C-2 未登入直接打查詢 ajax 會回 please login
-    Given 我已進入此功能頁
-    When 我在未登入狀態請求 /report/data、/recon/data、/recon/detail 與 /csr/data
-    Then 畫面應該顯示：未登入直接打查詢 ajax 會回 please login
+  Scenario: 已登入再用另一組帳號登入會覆蓋 session
+    # US-LGN-04 AC1（P-LGN-06）
+    Given 我以 "sa" 身分登入 Portal
+    When 我直接開啟 "/login" 頁面
+    And 我輸入帳號 "cp" 與密碼 "cp" 並送出
+    Then 我應該看到功能選單
+    And 導覽列應該顯示登入者 "cp"
 
   @legacy
-  Scenario: C-3 未登入直接打條款或帳戶查詢會回空陣列
-    Given 我已進入此功能頁
-    When 我在未登入狀態請求 /tos/data 與 /bankacc/data
-    Then 畫面應該顯示：未登入直接打條款或帳戶查詢會回空陣列
+  Scenario: 用 GET 開啟 doLogin 會得到 405 錯誤
+    # US-LGN-04 AC2（P-LGN-07，現況如此：不是導回登入頁）
+    When 我直接開啟 "/doLogin" 頁面
+    Then 回應狀態碼應該是 405
 
   @legacy
-  Scenario: C-4 sa、cp、csr 都能開每個功能頁
-    Given 我已進入此功能頁
-    When 我分別以 sa、cp、csr 登入後開啟每個功能頁
-    Then 畫面應該顯示：sa、cp、csr 都能開每個功能頁
+  Scenario: 登入表單缺少參數時回 400
+    # US-LGN-04 AC2（P-LGN-07：缺 username 或 password 參數回 HTTP 400）
+    When 我未登入直接以 POST 送出 "/doLogin" 並附上表單:
+      | username | sa |
+    Then 回應狀態碼應該是 400
 
-  Scenario: C-5 導覽列八個連結導到正確頁
-    Given 我已進入此功能頁
-    When 我點擊畫面上的導覽或功能連結
-    Then 畫面應該顯示：導覽列八個連結導到正確頁
-
-  Scenario: C-6 導覽列顯示登入者帳號與角色
-    Given 我已進入此功能頁
-    When 我點擊畫面上的導覽或功能連結
-    Then 畫面應該顯示：導覽列顯示登入者帳號與角色
-
-  @legacy
-  Scenario: C-7 登出後按上一頁再打 ajax 仍回 please login
-    Given 我已進入此功能頁
-    When 我點擊導覽列的「登出」並重新操作頁面
-    Then 畫面應該顯示：登出後按上一頁再打 ajax 仍回 please login
-
-  @legacy
-  Scenario: C-8 登出後重開首頁回登入頁
-    Given 我已進入此功能頁
-    When 我點擊導覽列的「登出」並重新操作頁面
-    Then 畫面應該顯示：登出後重開首頁回登入頁
-
-  @legacy
-  Scenario: C-9 查詢先顯示查詢中
-    Given 我已進入此功能頁
-    When 我在查詢頁按下查詢按鈕
-    Then 畫面應該顯示：查詢先顯示查詢中
-
-  @legacy
-  Scenario: C-10 連續查詢第二次覆蓋第一次結果
-    Given 我已進入此功能頁
-    When 我用兩組不同條件連續按下查詢兩次
-    Then 畫面應該顯示：連續查詢第二次覆蓋第一次結果
-
-  @legacy
-  Scenario: C-11 backend 500 顯示 backend error
-    Given 我已進入此功能頁
-    When 我輸入會觸發 HTTP 500 的條件後按下查詢
-    Then 畫面應該顯示：backend 500 顯示 backend error
-
-  @legacy
-  Scenario: C-12 backend 404 顯示 backend error
-    Given 我已進入此功能頁
-    When 我輸入會觸發 HTTP 404 的條件後按下查詢
-    Then 畫面應該顯示：backend 404 顯示 backend error
-
-  @legacy
-  Scenario: C-13 回應中的粗體 HTML 會被直接呈現
-    Given 我已進入此功能頁
-    When 我查詢會回傳 <b> 標記的資料
-    Then 畫面應該顯示：回應中的粗體 HTML 會被直接呈現
-
-  Scenario: L-1 開登入頁顯示標題、focus 與三組測試帳號
-    Given 我已進入此功能頁
-    When 我開啟頁面並查看欄位、按鈕與說明文字
-    Then 畫面應該顯示：開登入頁顯示標題、focus 與三組測試帳號
-
-  Scenario: L-2a sa/sa 登入成功到功能選單
-    Given 我已進入此功能頁
-    When 我在帳號與密碼欄輸入相同的測試帳號後按下登入
-    Then 畫面應該顯示：sa/sa 登入成功到功能選單
-
-  Scenario: L-2b cp/cp 登入成功到功能選單
-    Given 我已進入此功能頁
-    When 我在帳號與密碼欄輸入相同的測試帳號後按下登入
-    Then 畫面應該顯示：cp/cp 登入成功到功能選單
-
-  Scenario: L-2c csr/csr 登入成功到功能選單
-    Given 我已進入此功能頁
-    When 我在帳號與密碼欄輸入相同的測試帳號後按下登入
-    Then 畫面應該顯示：csr/csr 登入成功到功能選單
-
-  @legacy
-  Scenario: L-3 密碼錯誤停在登入頁並清空帳號
-    Given 我已進入此功能頁
-    When 我填寫登入欄位後按下登入
-    Then 畫面應該顯示：密碼錯誤停在登入頁並清空帳號
-
-  Scenario: L-4 不存在帳號顯示登入錯誤
-    Given 我已進入此功能頁
-    When 我填寫登入欄位後按下登入
-    Then 畫面應該顯示：不存在帳號顯示登入錯誤
-
-  @legacy
-  Scenario: L-5 帳號或密碼空白仍送出並顯示錯誤
-    Given 我已進入此功能頁
-    When 我填寫登入欄位後按下登入
-    Then 畫面應該顯示：帳號或密碼空白仍送出並顯示錯誤
-
-  Scenario: L-6 帳號大寫不同導致登入失敗
-    Given 我已進入此功能頁
-    When 我填寫登入欄位後按下登入
-    Then 畫面應該顯示：帳號大寫不同導致登入失敗
-
-  @legacy
-  Scenario: L-7 帳號前後空白導致登入失敗
-    Given 我已進入此功能頁
-    When 我填寫登入欄位後按下登入
-    Then 畫面應該顯示：帳號前後空白導致登入失敗
-
-  Scenario: L-8 密碼欄按 Enter 等同登入
-    Given 我已進入此功能頁
-    When 我在密碼欄輸入密碼後按 Enter
-    Then 畫面應該顯示：密碼欄按 Enter 等同登入
-
-  @legacy
-  Scenario: L-9 已登入再開登入頁仍顯示表單
-    Given 我已進入此功能頁
-    When 我開啟頁面並查看使用者可見的內容
-    Then 畫面應該顯示：已登入再開登入頁仍顯示表單
-
-  Scenario: L-10 已登入再以另一帳號登入會覆蓋 session
-    Given 我已進入此功能頁
-    When 我開啟頁面並查看使用者可見的內容
-    Then 畫面應該顯示：已登入再以另一帳號登入會覆蓋 session
-
-  Scenario: L-11 登出導回登入且不再顯示帳號
-    Given 我已進入此功能頁
-    When 我點擊導覽列的「登出」並重新操作頁面
-    Then 畫面應該顯示：登出導回登入且不再顯示帳號
-
-  @legacy
-  Scenario: L-12 GET doLogin 回 405
-    Given 我已進入此功能頁
-    When 我用 GET 方法開啟 /doLogin
-    Then 畫面應該顯示：GET doLogin 回 405
+  Scenario: 登出後回到登入頁且不顯示錯誤訊息
+    # US-LGN-03 AC1（P-LGN-09）
+    When 我輸入帳號 "sa" 與密碼 "sa" 並送出
+    And 我點擊導覽列的 "登出"
+    Then 我應該停留在登入頁
+    And 登入頁不應該顯示錯誤訊息

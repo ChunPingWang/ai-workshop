@@ -22,10 +22,6 @@ export class BasePage {
     await this.nav(text).click();
   }
 
-  async logout() {
-    await this.gotoNav('登出');
-  }
-
   /** 頂部顯示的登入者，例如 "sa" */
   async loggedInUser(): Promise<string> {
     return (await this.topbar.locator('span').first().textContent())?.trim() ?? '';
@@ -33,7 +29,7 @@ export class BasePage {
 
   /**
    * 等 ajax 結果區把「查詢中...」換掉。
-   * Portal 每個查詢頁都是先寫 '查詢中...' 再用回應覆蓋 #result / #detail / #list。
+   * Portal 每個查詢頁都是先寫 '查詢中...' 再用回應覆蓋 #result / #detail。
    */
   async waitForResult(container: Locator) {
     await expect(container).not.toHaveText(/查詢中/, { timeout: 10_000 });

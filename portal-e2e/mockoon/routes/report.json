@@ -1,122 +1,50 @@
 {
-  "description": "報表與退款 backend",
+  "description": "US-RPT-*／US-RFD-*（SRS 4.3／4.4）。Portal /report/data 轉打這兩個端點，回應為 HTML 片段。",
   "routes": [
     {
       "method": "GET",
       "path": "sa/report/trans",
-      "documentation": "",
+      "documentation": "交易報表。merchantId 分流：E000001 3筆(預設)、E000002 0筆、E500000 500、E404000 404、E000SQL query error、E010000 剛好10筆、E011000 11筆(畫面10列)、E000BLD 含<b>、E777000 參數檢查(from 須10碼)；timeType=auth 回授權時間報表",
       "responses": [
+        { "label": "有資料（預設，3 筆）", "default": true, "status": 200, "bodyFile": "report-trans-rows.html" },
+        { "label": "查無資料", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E000002" }], "status": 200, "bodyFile": "report-empty.html" },
+        { "label": "後端 500", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E500000" }], "status": 500, "contentType": "text/plain;charset=UTF-8", "body": "Internal Server Error" },
+        { "label": "後端 404", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E404000" }], "status": 404, "contentType": "text/plain;charset=UTF-8", "body": "Not Found" },
+        { "label": "SQL 錯誤（P-COM-26：HTTP 200 + query error:）", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E000SQL" }], "status": 200, "contentType": "text/html;charset=UTF-8", "body": "query error: Syntax error in SQL statement<br/>SQL=SELECT TXID FROM MWP_PAY_TRANS WHERE MERCHANT_ID='E000SQL'" },
+        { "label": "剛好 10 筆", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E010000" }], "status": 200, "bodyFile": "report-trans-10rows.html" },
+        { "label": "11 筆（畫面 10 列、total rows 11）", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E011000" }], "status": 200, "bodyFile": "report-trans-11rows.html" },
+        { "label": "回應含 <b> 標籤（P-COM-25 不轉義）", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E000BLD" }], "status": 200, "bodyFile": "report-trans-bold.html" },
         {
-          "label": "有資料",
-          "default": true,
-          "bodyFile": "report-trans.html"
-        },
-        {
-          "label": "查無資料",
-          "default": false,
-          "bodyFile": "report-empty.html",
+          "label": "參數檢查：from 必須是日期+小時 10 碼（P-RPT-03）",
           "rules": [
-            {
-              "target": "query",
-              "key": "merchantId",
-              "operator": "equals",
-              "value": "E000002"
-            }
-          ]
-        },
-        {
-          "label": "剛好10筆",
-          "default": false,
-          "bodyFile": "report-10.html",
-          "rules": [
-            {
-              "target": "query",
-              "key": "merchantId",
-              "operator": "equals",
-              "value": "E010000"
-            }
-          ]
-        },
-        {
-          "label": "超過10筆",
-          "default": false,
-          "bodyFile": "report-11.html",
-          "rules": [
-            {
-              "target": "query",
-              "key": "merchantId",
-              "operator": "equals",
-              "value": "E011000"
-            }
-          ]
-        },
-        {
-          "label": "授權時間",
-          "default": false,
-          "bodyFile": "report-trans-auth.html",
-          "rules": [
-            {
-              "target": "query",
-              "key": "timeType",
-              "operator": "equals",
-              "value": "auth"
-            }
-          ]
-        },
-        {
-          "label": "500",
-          "default": false,
-          "body": "backend failure",
-          "rules": [
-            {
-              "target": "query",
-              "key": "merchantId",
-              "operator": "equals",
-              "value": "E500000"
-            }
+            { "target": "query", "key": "merchantId", "operator": "equals", "value": "E777000" },
+            { "target": "query", "key": "from", "operator": "regex", "value": "^[0-9]{10}$" }
           ],
-          "status": 500,
-          "contentType": "text/plain"
-        }
+          "rulesOperator": "AND",
+          "status": 200,
+          "bodyFile": "report-trans-paramcheck.html",
+          "example": { "query": { "type": "trans", "from": "2026091500", "to": "2026091523", "merchantId": "E777000" } }
+        },
+        { "label": "授權時間報表（timeType=auth，P-RPT-04）", "rules": [{ "target": "query", "key": "timeType", "operator": "equals", "value": "auth" }], "status": 200, "bodyFile": "report-trans-auth.html" }
       ]
     },
     {
       "method": "GET",
       "path": "sa/report/refund",
-      "documentation": "",
+      "documentation": "退款報表。from 以 2099 開頭 → 0 筆；from 以 20260601 開頭且「未帶 merchantId」→ 參數檢查回 TXCHECKOK（P-RFD-02）",
       "responses": [
+        { "label": "有資料（預設，1 筆）", "default": true, "status": 200, "bodyFile": "report-refund-rows.html" },
+        { "label": "查無資料", "rules": [{ "target": "query", "key": "from", "operator": "regex", "value": "^2099" }], "status": 200, "bodyFile": "report-empty.html" },
         {
-          "label": "退款有資料",
-          "default": true,
-          "bodyFile": "report-refund.html"
-        },
-        {
-          "label": "查無資料",
-          "default": false,
-          "bodyFile": "report-empty.html",
+          "label": "參數檢查：refund 不帶 merchantId",
           "rules": [
-            {
-              "target": "query",
-              "key": "from",
-              "operator": "equals",
-              "value": "20990101"
-            }
-          ]
-        },
-        {
-          "label": "404",
-          "default": false,
-          "body": "not found",
-          "rules": [
-            {
-              "target": "query",
-              "key": "from",
-              "operator": "equals",
-              "value": "40400000"
-            }
+            { "target": "query", "key": "from", "operator": "regex", "value": "^20260601" },
+            { "target": "query", "key": "merchantId", "operator": "null" }
           ],
-          "status": 404,
-          "contentType": "text/plain"
+          "rulesOperator": "AND",
+          "status": 200,
+          "bodyFile": "report-refund-check.html",
+          "example": { "query": { "from": "2026060100", "to": "2026060123" } }
         }
       ]
     }
