@@ -11,11 +11,12 @@
 
 ## 課程流程對應的 skills（`.claude/skills/`）
 
-1. `/gen-gherkin` — 讀 portal 頁面與 backend 回應格式，產 `portal-e2e/features/*.feature` 與 Mockoon 情境。
-2. `/gen-test-code` — 把 feature 轉成 steps / Page Object / fixtures，直到 `bddgen` 與 `tsc` 乾淨。
-   → 使用者手動跑 `npm test`，取得升級前基線。
-3. `/upgrade-springboot` — 只把 `portal/` 升到 Spring Boot 4.1.1 / JDK 17+。
-   → 使用者再跑一次 `npm test`，同一套測試全綠即升級成功。
+1. `/gen-user-story` — 讀 `docs/new-pay_Portal_SRS.docx`（轉成 md），產 `docs/user-stories.md`（US／驗收條件 AC／需求追溯矩陣）與 Word 交付檔。SRS 是唯一需求來源，FSD 已降級不再讀。
+2. `/gen-gherkin` — 以 user-stories.md 的 US/AC 為覆蓋骨架、對照 portal 原始碼，產 `portal-e2e/features/*.feature` 與 Mockoon 情境；每條 AC 至少一個 scenario。
+3. `/gen-test-code` — 把 feature 轉成 steps / Page Object / fixtures，直到 `bddgen` 與 `tsc` 乾淨。
+   → 跑 `npm test`，取得升級前基線（全綠）。
+4. `/upgrade-springboot` — 只把 `portal/` 升到 Spring Boot 4.1.1 / JDK 17+。
+   → 再跑同一套 `npm test`，全綠即升級成功（行為零差異）。
 
 ## 慣例
 
