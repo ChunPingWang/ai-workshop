@@ -54,8 +54,21 @@ portal-e2e/
 
 每個 backend 端點一個 route，route 底下多個 response，用 **rule 依請求參數分流**，
 沒命中任何 rule 就回 `default`。這樣所有情境同時存在、測試之間不用切換 mock 狀態。
-觸發值慣例（沿用即可）：`E000001`／`0912345678` 有資料、`E000002`／`0900000000` 查無資料、
-`E500000`／`0950000000` 後端 500、`bankCode=999`／`content` 含 `FAIL` → `FAIL …`。
+
+| 端點 | 觸發值 | 情境 |
+|---|---|---|
+| `GET /sa/report/trans` | merchantId=`E000001`(預設)/`E000002`/`E500000`/`E404000`/`E000SQL` | 3 筆 / 0 筆 / 500 / 404 / query error |
+| `GET /sa/report/trans` | merchantId=`E010000`/`E011000`/`E000BLD` | 剛好 10 筆 / 11 筆(畫面 10 列) / 含 `<b>` 標記 |
+| `GET /sa/report/trans` | merchantId=`E777000` 且 from 為 10 碼；timeType=`auth` | 參數檢查 `TXPARAM10`；授權時間報表 `TXAUTH0001` |
+| `GET /sa/report/refund` | from 以 `2099` 開頭；以 `20260601` 開頭且未帶 merchantId | 0 筆；參數檢查 `TXCHECKOK` |
+| `GET /sa/report/reconDaily` | from=`20990101`/`20999999` | 0 筆 / 500（其他：R20260915 一致、R20260916 有差異） |
+| `GET /sa/report/reconMonthly` | from=`20990101` | 0 筆（其他：M202608 一筆） |
+| `GET /sa/report/reconDailyDetail` | reconId=`R20260916` | 1 筆差異 RECON_RESULT=104（其他：0 筆） |
+| `GET /sa/tos/query` | merchantID=`E000001`/`E000003`/`E500000`/`E999JSON` | v2 兩版次 / 含換行 v1 / 500 / 非 JSON（其他：`[]`） |
+| `POST /sa/tos/save` | merchantID=`E000001`；content 含 `FAIL`；content 空值 | `OK version=3` / `FAIL Value too long` / `FAIL NULL not allowed`（其他：`OK version=1`） |
+| `GET /cp/bankacc/list` | merchantId=`E000001`/`E500000` | 2 筆帳戶 / 500（其他：`[]`） |
+| `POST /cp/bankacc/save` | bankCode=`999`/`777`(+USD,N)/`776`(+NTD,Y)/空值 | `FAIL` / `OK FOREIGN-USD` / `OK DOMESTIC-NTD` / `FAIL NULL not allowed`（其他：`OK`） |
+| `GET /csr/trans` | msisdn=`0900000000`/`0950000000`/`0910000010` | 0 筆 / 500 / 11 筆(畫面 10 列)（其他：2 筆交易＋1 筆退款） |
 
 改 `mockoon/routes/*.json` 或 `bodies/` 後：
 
