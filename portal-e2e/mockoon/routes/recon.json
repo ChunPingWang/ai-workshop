@@ -1,107 +1,32 @@
 {
-  "description": "對帳",
+  "description": "US-RCN-*（SRS 4.5）。Portal /recon/data、/recon/detail 轉打這裡；欄位依 SRS 第 6 章 schema（每日 8 欄／每月 7 欄／明細 20 欄）。",
   "routes": [
     {
       "method": "GET",
       "path": "sa/report/reconDaily",
-      "documentation": "",
+      "documentation": "每日對帳。from=20990101 → 0 筆；from=20999999 → 後端 500；其他 → 2 筆（R20260915 一致、R20260916 有差異）",
       "responses": [
-        {
-          "label": "每日有資料",
-          "default": true,
-          "bodyFile": "recon-daily.html"
-        },
-        {
-          "label": "查無資料",
-          "default": false,
-          "bodyFile": "report-empty.html",
-          "rules": [
-            {
-              "target": "query",
-              "key": "from",
-              "operator": "equals",
-              "value": "20990101"
-            }
-          ]
-        },
-        {
-          "label": "500",
-          "default": false,
-          "body": "backend failure",
-          "rules": [
-            {
-              "target": "query",
-              "key": "from",
-              "operator": "equals",
-              "value": "E500000"
-            }
-          ],
-          "status": 500,
-          "contentType": "text/plain"
-        }
+        { "label": "有資料（預設，R20260915 Y/0、R20260916 N/1）", "default": true, "status": 200, "bodyFile": "recon-daily-rows.html" },
+        { "label": "查無資料", "rules": [{ "target": "query", "key": "from", "operator": "equals", "value": "20990101" }], "status": 200, "bodyFile": "report-empty.html" },
+        { "label": "後端 500", "rules": [{ "target": "query", "key": "from", "operator": "equals", "value": "20999999" }], "status": 500, "contentType": "text/plain;charset=UTF-8", "body": "Internal Server Error" }
       ]
     },
     {
       "method": "GET",
       "path": "sa/report/reconMonthly",
-      "documentation": "",
+      "documentation": "每月對帳。from=20990101 → 0 筆；其他 → 1 筆（M202608）",
       "responses": [
-        {
-          "label": "每月有資料",
-          "default": true,
-          "bodyFile": "recon-monthly.html"
-        },
-        {
-          "label": "查無資料",
-          "default": false,
-          "bodyFile": "report-empty.html",
-          "rules": [
-            {
-              "target": "query",
-              "key": "from",
-              "operator": "equals",
-              "value": "20990101"
-            }
-          ]
-        }
+        { "label": "有資料（預設，1 筆）", "default": true, "status": 200, "bodyFile": "recon-monthly-rows.html" },
+        { "label": "查無資料", "rules": [{ "target": "query", "key": "from", "operator": "equals", "value": "20990101" }], "status": 200, "bodyFile": "report-empty.html" }
       ]
     },
     {
       "method": "GET",
       "path": "sa/report/reconDailyDetail",
-      "documentation": "",
+      "documentation": "差異明細。reconId=R20260916 → 1 筆差異（RECON_RESULT 104）；其他（含空值與 M 開頭）→ 0 筆",
       "responses": [
-        {
-          "label": "無差異",
-          "default": true,
-          "bodyFile": "recon-detail-empty.html"
-        },
-        {
-          "label": "有差異",
-          "default": false,
-          "bodyFile": "recon-detail.html",
-          "rules": [
-            {
-              "target": "query",
-              "key": "reconId",
-              "operator": "equals",
-              "value": "R20260916"
-            }
-          ]
-        },
-        {
-          "label": "R20260915無差異",
-          "default": false,
-          "bodyFile": "recon-detail-empty.html",
-          "rules": [
-            {
-              "target": "query",
-              "key": "reconId",
-              "operator": "equals",
-              "value": "R20260915"
-            }
-          ]
-        }
+        { "label": "無差異（預設，0 筆）", "default": true, "status": 200, "bodyFile": "report-empty.html" },
+        { "label": "有差異", "rules": [{ "target": "query", "key": "reconId", "operator": "equals", "value": "R20260916" }], "status": 200, "bodyFile": "recon-detail-diff.html" }
       ]
     }
   ]

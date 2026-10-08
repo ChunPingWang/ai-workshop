@@ -1,29 +1,117 @@
 import { expect } from '@playwright/test';
-import { Then, When } from '../fixtures';
+import { Given, When, Then } from '../fixtures';
 
-When(/^我輸入情境值「(.+)」後按下查詢$/, async ({ reportPage, tosPage, bankaccPage, csrPage }, value: string) => {
-  const path = await reportPage.page.evaluate(() => location.pathname);
-  if (path === '/report') { await reportPage.merchantId.fill(value); await reportPage.queryButton.click(); await reportPage.waitForResult(reportPage.result); }
-  else if (path === '/tos') { await tosPage.merchantId.fill(value); await tosPage.query(); }
-  else if (path === '/bankacc') { await bankaccPage.merchantId.fill(value); await bankaccPage.query(); }
-  else { await csrPage.msisdn.fill(value); await csrPage.query(); }
+/** US-RPT-*／US-RFD-*（SRS 4.3／4.4）交易與退款報表。mock 觸發值見 mockoon/routes/report.json */
+
+Given('我在交易報表頁', async ({ reportPage }) => {
+  await reportPage.goto('trans');
+  await expect(reportPage.queryButton).toBeVisible();
 });
-When('我填寫查詢條件後按下查詢', async ({ page, reportPage, reconPage, csrPage }) => {
-  if ((await page).url().includes('/report')) await reportPage.query();
-  else if ((await page).url().includes('/recon')) await reconPage.query();
-  else { await csrPage.query(); }
+
+When('我前往退款報表頁', async ({ reportPage }) => {
+  await reportPage.goto('refund');
+  await expect(reportPage.queryButton).toBeVisible();
 });
-When('我清空商家欄位後按下查詢', async ({ reportPage }) => { await reportPage.merchantId.fill(''); await reportPage.query(); });
-When('我將日期輸入為 2026-09-15 後按下查詢', async ({ reportPage }) => { await reportPage.fromDate.fill('2026-09-15'); await reportPage.query(); });
-When('我輸入起日大於迄日後按下查詢', async ({ reportPage }) => { await reportPage.fromDate.fill('20991231'); await reportPage.toDate.fill('20000101'); await reportPage.query(); });
-When('我切換畫面上的選項後再次查詢', async ({ page, reportPage, reconPage }) => {
-  if ((await page).url().includes('/report')) { await reportPage.page.goto('/report?type=refund'); await reportPage.query(); }
-  else { await reconPage.type.selectOption('monthly'); await reconPage.query(); }
+
+// ---------- 初始狀態 ----------
+
+Then('商家欄位應該顯示且值為 {string}', async ({ reportPage }, value: string) => {
+  await expect(reportPage.merchantId).toBeVisible();
+  await expect(reportPage.merchantId).toHaveValue(value);
 });
-Then(/^交易報表|^退款報表|^不帶 type|^未知 type|^查詢送出|^E000001|^E000002|^E010000|^E011000|^E500000|^授權時間|^商家清空|^日期非八碼|^起日大於迄日|^退款查詢|^從交易報表|^匯出 CSV/, async ({ reportPage }) => {
-  await expect(reportPage.title).toBeVisible();
+
+Then('時間類型應該選在 {string}', async ({ reportPage }, label: string) => {
+  await expect(reportPage.timeType.locator('option:checked')).toHaveText(label);
 });
-Then(/^小時下拉包含 00 到 23$/, async ({ reportPage }) => {
-  await expect(reportPage.fromHour.locator('option')).toHaveCount(24);
-  await expect(reportPage.toHour.locator('option')).toHaveCount(24);
+
+Then('日期起訖欄位應該是 {int} 碼數字', async ({ reportPage }, digits: number) => {
+  const pattern = new RegExp(`^\\d{${digits}}$`);
+  await expect(reportPage.fromDate).toHaveValue(pattern);
+  await expect(reportPage.toDate).toHaveValue(pattern);
+});
+
+Then('起始小時應該選在 {string}', async ({ reportPage }, value: string) => {
+  await expect(reportPage.fromHour).toHaveValue(value);
+});
+
+Then('結束小時應該選在 {string}', async ({ reportPage }, value: string) => {
+  await expect(reportPage.toHour).toHaveValue(value);
+});
+
+Then(
+  '起始小時下拉應該有 {int} 個選項且第一個是 {string} 最後一個是 {string}',
+  async ({ reportPage }, count: number, first: string, last: string) => {
+    const options = reportPage.fromHour.locator('option');
+    await expect(options).toHaveCount(count);
+    await expect(options.first()).toHaveText(first);
+    await expect(options.last()).toHaveText(last);
+  },
+);
+
+Then(
+  '結束小時下拉應該有 {int} 個選項且第一個是 {string} 最後一個是 {string}',
+  async ({ reportPage }, count: number, first: string, last: string) => {
+    const options = reportPage.toHour.locator('option');
+    await expect(options).toHaveCount(count);
+    await expect(options.first()).toHaveText(first);
+    await expect(options.last()).toHaveText(last);
+  },
+);
+
+Then('商家與時間類型欄位應該隱藏', async ({ reportPage }) => {
+  await expect(reportPage.transOnly).toBeHidden();
+});
+
+// ---------- 查詢動作 ----------
+
+When('我把商家欄位改成 {string} 並按下查詢', async ({ reportPage }, merchantId: string) => {
+  await reportPage.merchantId.fill(merchantId);
+  await reportPage.query();
+});
+
+When('我清空商家欄位並按下查詢', async ({ reportPage }) => {
+  await reportPage.merchantId.fill('');
+  await reportPage.query();
+});
+
+When('我把起始日期改成 {string} 並按下查詢', async ({ reportPage }, fromDate: string) => {
+  await reportPage.fromDate.fill(fromDate);
+  await reportPage.query();
+});
+
+When(
+  '我把起始日期改成 {string} 且結束日期改成 {string} 並按下查詢',
+  async ({ reportPage }, fromDate: string, toDate: string) => {
+    await reportPage.fromDate.fill(fromDate);
+    await reportPage.toDate.fill(toDate);
+    await reportPage.query();
+  },
+);
+
+When('我把時間類型改成 {string} 並按下查詢', async ({ reportPage }, label: string) => {
+  await reportPage.timeType.selectOption({ label });
+  await reportPage.query();
+});
+
+// ---------- 結果呈現 ----------
+
+Then('結果區應該出現粗體文字 {string}', async ({ reportPage }, text: string) => {
+  // Portal 用 $('#result').html(data) 塞回應、不轉義（P-COM-25），<b> 會真的變粗體元素
+  await expect(reportPage.result.locator('b', { hasText: text })).toBeVisible();
+});
+
+Then('結果區應該先顯示 {string} 再顯示查詢結果', async ({ page, reportPage }, interim: string) => {
+  // 延遲一次 /report/data 回應，讓「查詢中...」的中間狀態留得住、可被斷言（P-COM-27）
+  await page.route(
+    '**/report/data*',
+    async (route) => {
+      await new Promise((r) => setTimeout(r, 1000));
+      await route.continue();
+    },
+    { times: 1 },
+  );
+  await reportPage.queryButton.click();
+  await expect(reportPage.result).toHaveText(interim);
+  await reportPage.waitForResult(reportPage.result);
+  await expect(reportPage.resultTable).toBeVisible();
 });

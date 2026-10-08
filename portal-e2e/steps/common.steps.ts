@@ -1,125 +1,199 @@
 import { expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { DataTable } from 'playwright-bdd';
 import { Given, When, Then } from '../fixtures';
+import { dataRows, expectHeaders, expectTableContains } from './support/htmlTable';
 
-const paths: Record<string, string> = {
-  '首頁': '/',
-  '交易與退款報表': '/report?type=trans',
-  'OLS 對帳查詢': '/recon',
-  '服務條款設定': '/tos',
-  '銀行帳戶註冊': '/bankacc',
-  'CSR 交易查詢': '/csr',
-  '登入與共通行為': '/login',
-};
+/**
+ * 跨頁面共用步驟：登入／登出／導覽／未登入行為／報表結果區（#result）。
+ * 各功能頁自己的步驟放在 steps/<功能>.steps.ts。
+ */
 
-Given('我以 {string} 身分登入 Portal', async ({ loginPage }, username: string) => {
-  await loginPage.login(username);
+// 登入頁網址：/login 或 /doLogin（登入失敗直接 return view）；
+// 全新瀏覽器的第一個 redirect 可能帶 Tomcat 的 URL session tracking（/login;jsessionid=XXXX）
+const LOGIN_URL = /\/(login|doLogin)(;jsessionid=[^/?#]+)?$/;
+
+/**
+ * 已知 Portal 現況 bug（US-COM-01 備註）：全新瀏覽器第一次登入的 redirect 會落在 /;jsessionid=XXXX，
+ * 這個 URL 比對不到 @GetMapping("/")，由 welcome page 直接 render index 模板——沒有 model，
+ * 導覽列的帳號/角色是空的。測試在斷言導覽列前先用乾淨 URL 重開一次，讓 controller 正常 render。
+ */
+async function gotoCleanUrlIfJsessionid(page: Page) {
+  if (page.url().includes(';jsessionid=')) {
+    await page.goto(page.url().replace(/;jsessionid=[^/?#]+/, ''));
+  }
+}
+
+// ---------- 登入與導覽 ----------
+
+Given('我在登入頁', async ({ loginPage }) => {
+  await loginPage.goto();
+  await expect(loginPage.submit).toBeVisible();
 });
 
-Given(/^我在(.+)頁$/, async ({ page }, name: string) => {
-  await page.goto(paths[name.trim()] ?? '/');
+Given('我以 {string} 身分登入 Portal', async ({ loginPage, homePage }, role: string) => {
+  // 帳號即角色、密碼同帳號：sa/sa、cp/cp、csr/csr
+  await loginPage.goto();
+  await loginPage.login(role, role);
+  await gotoCleanUrlIfJsessionid(loginPage.page);
+  await expect(homePage.heading).toBeVisible();
 });
 
-Given('我已進入此功能頁', async () => {});
-
-When('我開啟頁面並查看欄位、按鈕與說明文字', async () => {});
-When('我開啟頁面並查看使用者可見的內容', async () => {});
-When('我展開畫面上的下拉選單', async ({ page }) => {
-  await expect(page.locator('select').first()).toBeVisible();
+When('我輸入帳號 {string} 與密碼 {string} 並送出', async ({ loginPage }, username: string, password: string) => {
+  await loginPage.login(username, password);
 });
 
-When('我點擊畫面上的導覽或功能連結', async ({ page }) => {
-  const link = page.locator('.topbar a').first();
-  if (await link.count()) await expect(link).toBeVisible();
-  else await page.goto('/');
+When('我點擊導覽列的 {string}', async ({ homePage }, text: string) => {
+  await homePage.gotoNav(text);
 });
 
-When('我點擊導覽列的「登出」並重新操作頁面', async ({ page }) => {
-  const logout = page.locator('.topbar').getByRole('link', { name: '登出', exact: true });
-  if (await logout.count()) await logout.click();
-  else await page.goto('/login');
+When('我點擊首頁選單的 {string}', async ({ homePage }, text: string) => {
+  await homePage.menuLink(text).click();
 });
 
-When(/^我在未登入狀態分別開啟 \/report、\/recon、\/tos、\/bankacc、\/csr 與 \/$/, async ({ page }) => {
-  await page.context().clearCookies();
-  for (const path of ['/report', '/recon', '/tos', '/bankacc', '/csr', '/']) {
+When('我直接開啟 {string} 頁面', async ({ page }, path: string) => {
+  lastPostStatus = null;
+  await page.goto(path);
+});
+
+When('我在另一個分頁登出', async ({ page }) => {
+  // session cookie 是整個 context 共用的：另開分頁 /logout 讓 session 失效，原分頁的舊畫面保持不動
+  const other = await page.context().newPage();
+  await other.goto('/logout');
+  await other.close();
+});
+
+Then('我應該看到功能選單', async ({ homePage }) => {
+  await expect(homePage.heading).toBeVisible();
+});
+
+Then('我應該看到頁面標題 {string}', async ({ page }, title: string) => {
+  await expect(page.locator('.wrap h3').first()).toHaveText(title);
+});
+
+Then('瀏覽器分頁標題應該是 {string}', async ({ page }, title: string) => {
+  await expect(page).toHaveTitle(title);
+});
+
+Then('導覽列應該顯示登入者 {string}', async ({ page, homePage }, user: string) => {
+  await gotoCleanUrlIfJsessionid(page);
+  expect(await homePage.loggedInUser()).toBe(user);
+});
+
+Then('導覽列的登入者應該是空白', async ({ homePage }) => {
+  await expect(homePage.topbar.locator('span').first()).toHaveText('');
+});
+
+Then('導覽列應該顯示角色 {string}', async ({ homePage }, role: string) => {
+  await expect(homePage.topbar).toContainText(role);
+});
+
+Then('我應該停留在登入頁', async ({ page, loginPage }) => {
+  await expect(page).toHaveURL(LOGIN_URL);
+  await expect(loginPage.submit).toBeVisible();
+});
+
+Then('登入頁應該顯示錯誤訊息 {string}', async ({ loginPage }, message: string) => {
+  await expect(loginPage.error).toHaveText(message);
+});
+
+Then('登入頁不應該顯示錯誤訊息', async ({ loginPage }) => {
+  // th:if 不成立時錯誤訊息元素根本不存在（P-LGN-09）
+  await expect(loginPage.error).toHaveCount(0);
+});
+
+Then('我可以依序開啟所有功能頁而不被導回登入頁', async ({ page }) => {
+  const paths = ['/', '/report?type=trans', '/report?type=refund', '/recon', '/tos', '/bankacc', '/csr'];
+  for (const path of paths) {
     await page.goto(path);
-    await expect(page).toHaveURL(/\/login(?:;jsessionid=[^/?]+)?$/);
+    await expect(page).not.toHaveURL(LOGIN_URL);
+    await expect(page.locator('.wrap h3').first()).toBeVisible();
   }
 });
 
-When(/^我在未登入狀態請求 \/report\/data、\/recon\/data、\/recon\/detail 與 \/csr\/data$/, async ({ page }) => {
-  await page.context().clearCookies();
-  for (const path of ['/report/data?type=trans&from=2026091500&to=2026091523', '/recon/data?type=daily&from=20260915&to=20260915', '/recon/detail?reconId=R20260915', '/csr/data?msisdn=0912345678']) {
-    const response = await page.request.get(path);
-    expect(await response.text()).toContain('please login');
+// ---------- 通用畫面斷言 ----------
+
+Then('頁面應該顯示說明 {string}', async ({ page }, text: string) => {
+  await expect(page.locator('body')).toContainText(text);
+});
+
+Then('頁面應該顯示按鈕 {string}', async ({ page }, name: string) => {
+  await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
+});
+
+// tos 頁的商家欄位 id 是 merchantID、bankacc 是 merchantId，各頁只會有其中一個
+Then('商家代碼欄位值應該是 {string}', async ({ page }, value: string) => {
+  await expect(page.locator('#merchantID, #merchantId')).toHaveValue(value);
+});
+
+// ---------- 未登入直接打端點 ----------
+
+Then('頁面內容應該是 {string}', async ({ page }, text: string) => {
+  await expect(page.locator('body')).toHaveText(text);
+});
+
+// POST 步驟與回應斷言共用的暫存（同一個 scenario 內先送出再斷言）
+let lastPostResponseBody = '';
+let lastPostStatus: number | null = null;
+
+When('我未登入直接以 POST 送出 {string} 並附上表單:', async ({ page }, path: string, table: DataTable) => {
+  const response = await page.request.post(path, { form: table.rowsHash() });
+  lastPostStatus = response.status();
+  lastPostResponseBody = (await response.text()).trim();
+});
+
+Then('回應內容應該是 {string}', async ({}, expected: string) => {
+  expect(lastPostResponseBody).toBe(expected);
+});
+
+Then('回應狀態碼應該是 {int}', async ({ page }, status: number) => {
+  if (lastPostStatus !== null) {
+    // 剛以 POST 送出過表單 → 用該回應的狀態碼
+    expect(lastPostStatus).toBe(status);
+    return;
   }
+  // 頁面導航拿不到 response 物件，以目前網址重打一次拿狀態碼
+  const response = await page.request.get(page.url());
+  expect(response.status()).toBe(status);
 });
 
-When(/^我在未登入狀態請求 \/tos\/data 與 \/bankacc\/data$/, async ({ page }) => {
-  await page.context().clearCookies();
-  for (const path of ['/tos/data?merchantID=E000001', '/bankacc/data?merchantId=E000001']) {
-    const response = await page.request.get(path);
-    await expect(response).toBeOK();
-    expect(await response.text()).toBe('[]');
-  }
+// ---------- 查詢與結果區（report / recon 共用 #btnQuery / #result） ----------
+
+When('我按下查詢', async ({ page }) => {
+  await page.locator('#btnQuery').click();
+  await expect(page.locator('#result')).not.toHaveText(/查詢中/, { timeout: 10_000 });
 });
 
-When('我分別以 sa、cp、csr 登入後開啟每個功能頁', async ({ loginPage }) => {
-  for (const user of ['sa', 'cp', 'csr']) {
-    await loginPage.login(user);
-    await expect(loginPage.page).toHaveURL(/\/$/);
-  }
+Then('結果區應該顯示 {string}', async ({ page }, text: string) => {
+  await expect(page.locator('#result')).toContainText(text);
 });
 
-When('我在查詢頁按下查詢按鈕', async ({ page }) => {
-  const button = page.locator('#btnQuery');
-  if (await button.count()) await button.click();
+Then('結果區不應該包含 {string}', async ({ page }, text: string) => {
+  await expect(page.locator('#result')).not.toContainText(text);
 });
 
-When('我用兩組不同條件連續按下查詢兩次', async ({ page }) => {
-  const button = page.locator('#btnQuery');
-  if (await button.count()) { await button.click(); await button.click(); }
+Then('結果表格應該有 {int} 筆資料', async ({ page }, count: number) => {
+  await expect(dataRows(page.locator('#result table').first())).toHaveCount(count);
 });
 
-When(/^我輸入會觸發 HTTP (\d+) 的條件後按下查詢$/, async ({ page }, status: string) => {
-  const input = page.locator('#merchantId, #merchantID, #msisdn').first();
-  if (await input.count()) {
-    await input.fill(status === '500' ? 'E500000' : 'E404000');
-    await page.locator('#btnQuery').click();
-  }
+Then(
+  '結果表格應該有 {int} 個欄位且第一欄是 {string} 最後一欄是 {string}',
+  async ({ page }, count: number, first: string, last: string) => {
+    await expectHeaders(page.locator('#result table').first(), count, first, last);
+  },
+);
+
+Then('結果表格應該包含以下資料:', async ({ page }, table: DataTable) => {
+  await expectTableContains(page.locator('#result table').first(), table.hashes());
 });
 
-When('我查詢會回傳 <b> 標記的資料', async ({ page }) => {
-  if (await page.locator('#btnQuery').count()) await page.locator('#btnQuery').click();
+Then('結果表格第 {int} 筆的 TXID 應該是 {string}', async ({ page }, index: number, txid: string) => {
+  // TXID 是報表類表格的第一欄
+  const row = dataRows(page.locator('#result table').first()).nth(index - 1);
+  await expect(row.locator('td').first()).toHaveText(txid);
 });
 
-When('我在帳號與密碼欄輸入相同的測試帳號後按下登入', async ({ loginPage }) => {
-  await loginPage.username.fill('sa');
-  await loginPage.password.fill('sa');
-  await loginPage.submit.click();
-});
-
-When('我填寫登入欄位後按下登入', async ({ loginPage }) => {
-  await loginPage.username.fill('invalid');
-  await loginPage.password.fill('invalid');
-  await loginPage.submit.click();
-});
-
-When('我在密碼欄輸入密碼後按 Enter', async ({ loginPage }) => {
-  await loginPage.username.fill('sa');
-  await loginPage.password.fill('sa');
-  await loginPage.password.press('Enter');
-});
-
-Then(/^畫面應該顯示：(.+)$/, async ({ page }, expectation: string) => {
-  const body = page.locator('body');
-  if (expectation.includes('backend error')) {
-    if (await page.locator('#result').count()) await expect(body).toContainText('backend error');
-    else await expect(page.locator('#username')).toBeVisible();
-  }
-  else if (expectation.includes('初始') || expectation.includes('標題')) await expect(page.locator('h3').first()).toBeVisible();
-  else if (expectation.includes('登入頁')) await expect(page.locator('#username')).toBeVisible();
-  else if (expectation.includes('登出')) await expect(page).toHaveURL(/\/login(?:;jsessionid=[^/?]+)?$/);
-  else if (expectation.includes('下拉')) await expect(page.locator('select').first()).toBeVisible();
-  else await expect(body).toBeVisible();
+Then('查詢結果應該顯示後端錯誤', async ({ page }) => {
+  // PortalController.relay() 捕捉例外後回 "backend error: ..." 純文字（P-COM-15）
+  await expect(page.locator('#result')).toContainText('backend error');
 });

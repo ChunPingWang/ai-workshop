@@ -1,12 +1,17 @@
 import { expect } from '@playwright/test';
 import { Then } from '../fixtures';
 
-Then('首頁應該顯示三個 Portal 區塊標題', async ({ indexPage }) => indexPage.assertContent());
-Then(/^首頁顯示(?:各區塊連結與 FSD 章節|未依角色過濾註記)$/, async ({ indexPage }) => {
-  await indexPage.assertContent();
-  await expect(indexPage.page.locator('.wrap a')).toHaveCount(7);
+/** US-HOME-*（SRS 4.2）首頁功能選單：三個 .box，各有 <b> 標題與 <ul> 連結 */
+
+Then('首頁應該顯示區塊 {string}', async ({ homePage }, name: string) => {
+  await expect(homePage.menuBoxes.locator('b').filter({ hasText: name })).toBeVisible();
 });
-Then('首頁連結導到對應功能頁', async ({ indexPage }) => {
-  await expect(indexPage.links).toHaveCount(7);
+
+Then('{string} 區塊應該有 {int} 個連結', async ({ homePage }, name: string, count: number) => {
+  const box = homePage.menuBoxes.filter({ hasText: name });
+  await expect(box.locator('ul a')).toHaveCount(count);
 });
-Then('csr 也看得到並能進入 SA 連結', async ({ indexPage }) => indexPage.assertContent());
+
+Then('首頁應該顯示連結 {string}', async ({ homePage }, text: string) => {
+  await expect(homePage.menuLink(text)).toBeVisible();
+});
