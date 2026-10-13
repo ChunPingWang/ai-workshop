@@ -1,0 +1,10 @@
+[
+  {
+    "MERCHANT_ID": "E000077",
+    "BANK_CODE": "812",
+    "BANK_ACC": "5555666677778888",
+    "CURRENCY": "NTD",
+    "IS_DOMESTIC": "Y",
+    "STATUS": "W"
+  }
+]

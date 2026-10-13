@@ -1,0 +1,45 @@
+{
+  "description": "OLS 對帳結果查詢（recon.html；US-RCN-01〜04／SRS 4.5）",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "sa/report/reconDaily",
+      "documentation": "SRS 4.5.4 每日彙總",
+      "responses": [
+        { "label": "查無資料（from=20990101）", "rules": [ { "target": "query", "key": "from", "operator": "equals", "value": "20990101" } ],
+          "status": 200, "bodyFile": "report-empty.html" },
+        { "label": "後端 500（from=20999999）", "rules": [ { "target": "query", "key": "from", "operator": "equals", "value": "20999999" } ],
+          "status": 500, "contentType": "application/json", "bodyFile": "backend-500.txt" },
+        { "label": "區間含非數字 → 0 筆", "rules": [ { "target": "query", "key": "from", "operator": "regex", "value": "[^0-9]" } ],
+          "status": 200, "bodyFile": "report-empty.html", "example": { "query": { "from": "abc", "to": "20991231" } } },
+        { "label": "12 筆、畫面 10 列（from=20250101）", "rules": [ { "target": "query", "key": "from", "operator": "equals", "value": "20250101" } ],
+          "status": 200, "bodyFile": "recon-daily-12.html" },
+        { "label": "R20260915 一致、R20260916 有差異（預設）", "default": true, "status": 200, "bodyFile": "recon-daily-rows.html" }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "sa/report/reconMonthly",
+      "documentation": "SRS 4.5.4 每月彙總",
+      "responses": [
+        { "label": "查無資料（from=20990101）", "rules": [ { "target": "query", "key": "from", "operator": "equals", "value": "20990101" } ],
+          "status": 200, "bodyFile": "report-empty.html" },
+        { "label": "M202608 一筆（預設）", "default": true, "status": 200, "bodyFile": "recon-monthly-rows.html" }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "sa/report/reconDailyDetail",
+      "documentation": "SRS 4.5.4 差異明細（只列 RECON_RESULT <> 000）",
+      "responses": [
+        { "label": "R20260916 → 1 筆差異 104", "rules": [ { "target": "query", "key": "reconId", "operator": "equals", "value": "R20260916" } ],
+          "status": 200, "bodyFile": "recon-detail-diff.html" },
+        { "label": "R20260917 → 9 種差異代碼各一筆", "rules": [ { "target": "query", "key": "reconId", "operator": "equals", "value": "R20260917" } ],
+          "status": 200, "bodyFile": "recon-detail-codes.html" },
+        { "label": "後端 500（R99999999）", "rules": [ { "target": "query", "key": "reconId", "operator": "equals", "value": "R99999999" } ],
+          "status": 500, "contentType": "application/json", "bodyFile": "backend-500.txt" },
+        { "label": "0 筆（預設：R20260915 一致、M202608、空值）", "default": true, "status": 200, "bodyFile": "report-empty.html" }
+      ]
+    }
+  ]
+}

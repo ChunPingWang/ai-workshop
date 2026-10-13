@@ -1,0 +1,11 @@
+[
+  {
+    "MERCHANT_ID": "E000003",
+    "TOS_VERSION": 1,
+    "TOS_URL": "http://localhost:8099/getToS.jsp?merchantID=E000003&version=1",
+    "TOS_CONTENT": "第一行條款\n第二行條款 <b>不應變粗體</b>",
+    "TOS_NOTE": "multiline",
+    "TOS_MODIFIED_DATE": "20260101000000",
+    "TOS_START_DATE": "20260101000000"
+  }
+]

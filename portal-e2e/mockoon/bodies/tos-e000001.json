@@ -1,0 +1,20 @@
+[
+  {
+    "MERCHANT_ID": "E000001",
+    "TOS_VERSION": 2,
+    "TOS_URL": "http://localhost:8099/getToS.jsp?merchantID=E000001&version=2",
+    "TOS_CONTENT": "OnlineStore 電信帳單代收服務條款 v2: 第二版內容",
+    "TOS_NOTE": "v2 revise",
+    "TOS_MODIFIED_DATE": "20260901000000",
+    "TOS_START_DATE": "20260901000000"
+  },
+  {
+    "MERCHANT_ID": "E000001",
+    "TOS_VERSION": 1,
+    "TOS_URL": "http://localhost:8099/getToS.jsp?merchantID=E000001&version=1",
+    "TOS_CONTENT": "OnlineStore 電信帳單代收服務條款 v1: ...",
+    "TOS_NOTE": "OLS merchant tos",
+    "TOS_MODIFIED_DATE": "20130301000000",
+    "TOS_START_DATE": "20130301000000"
+  }
+]

@@ -1,0 +1,49 @@
+{
+  "description": "商家銀行帳戶註冊（bankacc.html；US-BNK-01〜04／SRS 4.7）。Mockoon 無狀態：用 E000077 的清單模擬「註冊後出現新帳戶」",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "cp/bankacc/list",
+      "documentation": "SRS 4.7.4 清單，JSON 陣列",
+      "responses": [
+        { "label": "E000001 → 初始帳戶（A／國外）＋ 一筆待審（W／國內）", "rules": [ { "target": "query", "key": "merchantId", "operator": "equals", "value": "E000001" } ],
+          "status": 200, "bodyFile": "bankacc-e000001.json" },
+        { "label": "後端 500（E500000）", "rules": [ { "target": "query", "key": "merchantId", "operator": "equals", "value": "E500000" } ],
+          "status": 500, "contentType": "application/json", "bodyFile": "backend-500.txt" },
+        { "label": "E000077 → 註冊後的新帳戶（W／國內）", "rules": [ { "target": "query", "key": "merchantId", "operator": "equals", "value": "E000077" } ],
+          "status": 200, "bodyFile": "bankacc-e000077.json" },
+        { "label": "E000012 → 12 筆", "rules": [ { "target": "query", "key": "merchantId", "operator": "equals", "value": "E000012" } ],
+          "status": 200, "bodyFile": "bankacc-e000012.json" },
+        { "label": "無帳戶 []（預設）", "default": true, "status": 200, "bodyFile": "bankacc-empty.json" }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "cp/bankacc/save",
+      "documentation": "SRS 4.7.4 註冊（form：merchantId、bankCode、bankAcc、currency、isDomestic）",
+      "responses": [
+        { "label": "銀行代碼或帳號空白 → FAIL NULL not allowed",
+          "rules": [ { "target": "body", "key": "bankCode", "operator": "regex", "value": "^$" }, { "target": "body", "key": "bankAcc", "operator": "regex", "value": "^$" } ],
+          "status": 200, "contentType": "text/plain;charset=UTF-8",
+          "body": "FAIL StatementCallback; NULL not allowed for column \"BANK_CODE\"; SQL statement: INSERT INTO MWP_MERCHANT_BANK_ACC ...",
+          "example": { "form": { "merchantId": "E000001", "bankCode": "", "bankAcc": "123", "currency": "NTD", "isDomestic": "Y" } } },
+        { "label": "銀行代碼超過 3 碼或帳號超過 16 碼 → FAIL Value too long",
+          "rules": [ { "target": "body", "key": "bankCode", "operator": "regex", "value": "^.{4,}$" }, { "target": "body", "key": "bankAcc", "operator": "regex", "value": "^.{17,}$" } ],
+          "status": 200, "contentType": "text/plain;charset=UTF-8",
+          "body": "FAIL StatementCallback; Value too long for column \"BANK_CODE VARCHAR2(3)\"",
+          "example": { "form": { "merchantId": "E000001", "bankCode": "0071", "bankAcc": "123", "currency": "NTD", "isDomestic": "Y" } } },
+        { "label": "參數檢查：777＋USD＋外國銀行 → OK FOREIGN-USD", "rulesOperator": "AND",
+          "rules": [ { "target": "body", "key": "bankCode", "operator": "equals", "value": "777" }, { "target": "body", "key": "currency", "operator": "equals", "value": "USD" }, { "target": "body", "key": "isDomestic", "operator": "equals", "value": "N" } ],
+          "status": 200, "contentType": "text/plain;charset=UTF-8", "body": "OK FOREIGN-USD" },
+        { "label": "參數檢查：776＋NTD＋國內銀行 → OK DOMESTIC-NTD", "rulesOperator": "AND",
+          "rules": [ { "target": "body", "key": "bankCode", "operator": "equals", "value": "776" }, { "target": "body", "key": "currency", "operator": "equals", "value": "NTD" }, { "target": "body", "key": "isDomestic", "operator": "equals", "value": "Y" } ],
+          "status": 200, "contentType": "text/plain;charset=UTF-8", "body": "OK DOMESTIC-NTD" },
+        { "label": "後端 500（merchantId=E500000）", "rules": [ { "target": "body", "key": "merchantId", "operator": "equals", "value": "E500000" } ],
+          "status": 500, "contentType": "application/json", "bodyFile": "backend-500.txt",
+          "example": { "form": { "merchantId": "E500000", "bankCode": "812", "bankAcc": "123", "currency": "NTD", "isDomestic": "Y" } } },
+        { "label": "註冊成功 OK（預設）", "default": true, "status": 200, "contentType": "text/plain;charset=UTF-8", "body": "OK",
+          "example": { "form": { "merchantId": "E000077", "bankCode": "812", "bankAcc": "5555666677778888", "currency": "NTD", "isDomestic": "Y" } } }
+      ]
+    }
+  ]
+}

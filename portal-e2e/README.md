@@ -57,18 +57,21 @@ portal-e2e/
 
 | 端點 | 觸發值 | 情境 |
 |---|---|---|
-| `GET /sa/report/trans` | merchantId=`E000001`(預設)/`E000002`/`E500000`/`E404000`/`E000SQL` | 3 筆 / 0 筆 / 500 / 404 / query error |
-| `GET /sa/report/trans` | merchantId=`E010000`/`E011000`/`E000BLD` | 剛好 10 筆 / 11 筆(畫面 10 列) / 含 `<b>` 標記 |
-| `GET /sa/report/trans` | merchantId=`E777000` 且 from 為 10 碼；timeType=`auth` | 參數檢查 `TXPARAM10`；授權時間報表 `TXAUTH0001` |
-| `GET /sa/report/refund` | from 以 `2099` 開頭；以 `20260601` 開頭且未帶 merchantId | 0 筆；參數檢查 `TXCHECKOK` |
-| `GET /sa/report/reconDaily` | from=`20990101`/`20999999` | 0 筆 / 500（其他：R20260915 一致、R20260916 有差異） |
+| `GET /sa/report/trans` | merchantId=`E000002`/`e000001`/`E500000`/`E404000`/含 `'` | 0 筆 / 0 筆（大小寫不符） / 500 / 404 / query error |
+| `GET /sa/report/trans` | merchantId=`E010000`/`E011000`/`E000BLD`/未帶 | 剛好 10 筆 / 11 筆(畫面 10 列) / 含 `<b>` 標記 / 含 E000009 的全部商家 4 筆 |
+| `GET /sa/report/trans` | from=`00`且to=`23`；from 9 碼；from `20260917…`且to `20260916…` | 全部日期 3 筆 / 0 筆 / 0 筆（起日晚於迄日） |
+| `GET /sa/report/trans` | timeType=`auth`；from=`2026091600`且to=`2026091623` | 授權時間報表 2 筆 / 含 23:59:59 的整日區間 2 筆（其他：3 筆） |
+| `GET /sa/report/refund` | from 以 `2099`/`2095` 開頭；以 `20260601` 開頭且未帶 merchantId、timeType | 0 筆 / 500 / 參數檢查 `TXCHECKOK`（其他：2 筆） |
+| `GET /sa/report/reconDaily` | from=`20990101`/`20999999`/含非數字/`20250101` | 0 筆 / 500 / 0 筆 / 12 筆(畫面 10 列)（其他：R20260915 一致、R20260916 有差異） |
 | `GET /sa/report/reconMonthly` | from=`20990101` | 0 筆（其他：M202608 一筆） |
-| `GET /sa/report/reconDailyDetail` | reconId=`R20260916` | 1 筆差異 RECON_RESULT=104（其他：0 筆） |
-| `GET /sa/tos/query` | merchantID=`E000001`/`E000003`/`E500000`/`E999JSON` | v2 兩版次 / 含換行 v1 / 500 / 非 JSON（其他：`[]`） |
-| `POST /sa/tos/save` | merchantID=`E000001`；content 含 `FAIL`；content 空值 | `OK version=3` / `FAIL Value too long` / `FAIL NULL not allowed`（其他：`OK version=1`） |
-| `GET /cp/bankacc/list` | merchantId=`E000001`/`E500000` | 2 筆帳戶 / 500（其他：`[]`） |
-| `POST /cp/bankacc/save` | bankCode=`999`/`777`(+USD,N)/`776`(+NTD,Y)/空值 | `FAIL` / `OK FOREIGN-USD` / `OK DOMESTIC-NTD` / `FAIL NULL not allowed`（其他：`OK`） |
-| `GET /csr/trans` | msisdn=`0900000000`/`0950000000`/`0910000010` | 0 筆 / 500 / 11 筆(畫面 10 列)（其他：2 筆交易＋1 筆退款） |
+| `GET /sa/report/reconDailyDetail` | reconId=`R20260916`/`R20260917`/`R99999999` | 1 筆差異 104 / 9 種差異代碼 / 500（其他：0 筆） |
+| `GET /sa/tos/query` | merchantID=`E000001`/`E000003`/`E500000`/`E999JSON`/含 `'` | v2 兩版次 / 含換行與 `<b>` 的 v1 / 500 / 非 JSON / 500（其他：`[]`） |
+| `POST /sa/tos/save` | merchantID=`E500000`/`E000001`；startDate 或 content 空；content 含 `'`；startDate >14 碼或 merchantID >10 碼 | 500 / `OK version=3` / `FAIL NULL not allowed` / `FAIL Syntax error` / `FAIL Value too long`（其他：`OK version=1`） |
+| `GET /cp/bankacc/list` | merchantId=`E000001`/`E000012`/`E000077`/`E500000` | 2 筆帳戶 / 12 筆 / 註冊後的新帳戶 W / 500（其他：`[]`） |
+| `POST /cp/bankacc/save` | bankCode 或 bankAcc 空；bankCode >3 碼或 bankAcc >16 碼；`777`+USD+N；`776`+NTD+Y；merchantId=`E500000` | `FAIL NULL not allowed` / `FAIL Value too long` / `OK FOREIGN-USD` / `OK DOMESTIC-NTD` / 500（其他：`OK`） |
+| `GET /csr/trans` | msisdn=`0900000000`/`0950000000`/`0910000010`/`0922222222`/含 `'`/非 10 碼數字 | 0 筆 / 500 / 11 筆(畫面 10 列) / 有交易無退款 / query error / 0 筆（其他：2 筆交易＋1 筆退款） |
+
+回應依 route 內的順序比對，第一個命中的生效；覆蓋矩陣見 `features/COVERAGE.md`。
 
 改 `mockoon/routes/*.json` 或 `bodies/` 後：
 
