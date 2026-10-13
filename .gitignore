@@ -9,3 +9,6 @@ nohup.out
 
 # IDE
 .idea/
+
+# gen-user-story 轉圖中間產物
+docs/.build/
