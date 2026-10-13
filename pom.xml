@@ -27,6 +27,6 @@
 
     <modules>
         <module>backend</module>
-        <module>portal</module>
+        <!-- portal 已升級 Spring Boot 4.x / JDK 17，獨立建置：mvn -f portal/pom.xml ... -->
     </modules>
 </project>

@@ -3,7 +3,7 @@ package com.telco.mwp.portal;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

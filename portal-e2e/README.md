@@ -17,9 +17,9 @@ Portal 的 `PortalController.BACKEND` 寫死打 `http://localhost:8099`，所以
 ## 快速開始
 
 ```bash
-# 終端機 1：啟動 Portal（升級前 JDK 8；升級 Spring Boot 4 之後改 JDK 17+）
+# 終端機 1：啟動 Portal（已升級 Spring Boot 4.1.1，需 JDK 17 或 21；升級前為 JDK 8）
 cd ../portal
-JAVA_HOME=~/.sdkman/candidates/java/8.0.482-zulu mvn spring-boot:run
+JAVA_HOME=~/.sdkman/candidates/java/<JDK 17 或 21> mvn spring-boot:run
 
 # 終端機 2：跑測試（第一次要 npm install + 下載瀏覽器）
 cd portal-e2e
