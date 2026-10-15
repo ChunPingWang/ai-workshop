@@ -10,9 +10,8 @@ Playwright ──► Portal (8098, Spring Boot + Thymeleaf + jQuery) ──► M
 
 Portal 的 `PortalController.BACKEND` 寫死打 `http://localhost:8099`，所以 Mockoon 只要聽在 8099，Portal 一行都不用改。
 
-> 這個目錄目前只入版控**骨架**（設定檔、mockoon build/check 腳本、BasePage、fixtures 殼）。
-> `features/`、`steps/`、`pages/` 的內容與 `mockoon/routes/`、`mockoon/bodies/` 由
-> `/gen-gherkin` 與 `/gen-test-code` 兩個 skill 產生（見 `.claude/skills/`）。
+> `features/`、`features/COVERAGE.md` 與 `mockoon/routes/`、`mockoon/bodies/` 由 `/gen-gherkin` 依 User Story 產生。
+> `steps/` 與 `pages/` 的可執行測試碼由 `/gen-test-code` 接續產生；目前 feature 的 step definitions 尚未補齊。
 
 ## 快速開始
 
@@ -57,18 +56,19 @@ portal-e2e/
 
 | 端點 | 觸發值 | 情境 |
 |---|---|---|
-| `GET /sa/report/trans` | merchantId=`E000001`(預設)/`E000002`/`E500000`/`E404000`/`E000SQL` | 3 筆 / 0 筆 / 500 / 404 / query error |
-| `GET /sa/report/trans` | merchantId=`E010000`/`E011000`/`E000BLD` | 剛好 10 筆 / 11 筆(畫面 10 列) / 含 `<b>` 標記 |
-| `GET /sa/report/trans` | merchantId=`E777000` 且 from 為 10 碼；timeType=`auth` | 參數檢查 `TXPARAM10`；授權時間報表 `TXAUTH0001` |
-| `GET /sa/report/refund` | from 以 `2099` 開頭；以 `20260601` 開頭且未帶 merchantId | 0 筆；參數檢查 `TXCHECKOK` |
-| `GET /sa/report/reconDaily` | from=`20990101`/`20999999` | 0 筆 / 500（其他：R20260915 一致、R20260916 有差異） |
-| `GET /sa/report/reconMonthly` | from=`20990101` | 0 筆（其他：M202608 一筆） |
-| `GET /sa/report/reconDailyDetail` | reconId=`R20260916` | 1 筆差異 RECON_RESULT=104（其他：0 筆） |
-| `GET /sa/tos/query` | merchantID=`E000001`/`E000003`/`E500000`/`E999JSON` | v2 兩版次 / 含換行 v1 / 500 / 非 JSON（其他：`[]`） |
-| `POST /sa/tos/save` | merchantID=`E000001`；content 含 `FAIL`；content 空值 | `OK version=3` / `FAIL Value too long` / `FAIL NULL not allowed`（其他：`OK version=1`） |
-| `GET /cp/bankacc/list` | merchantId=`E000001`/`E500000` | 2 筆帳戶 / 500（其他：`[]`） |
-| `POST /cp/bankacc/save` | bankCode=`999`/`777`(+USD,N)/`776`(+NTD,Y)/空值 | `FAIL` / `OK FOREIGN-USD` / `OK DOMESTIC-NTD` / `FAIL NULL not allowed`（其他：`OK`） |
-| `GET /csr/trans` | msisdn=`0900000000`/`0950000000`/`0910000010` | 0 筆 / 500 / 11 筆(畫面 10 列)（其他：2 筆交易＋1 筆退款） |
+| `GET /sa/report/trans` | 不帶 merchantId / `E000001` / `E000002` / `E500000` / `E404000` / `E000SQL` / 單引號 | 全商家資料 / 3 筆 / 0 筆 / 500 / 404 / query error |
+| `GET /sa/report/trans` | `E010000` / `E011000` / `E000BLD` / `timeType=auth` | 10 列 / 10 列但 total rows 11 / 未轉義 `<b>` / 授權時間結果 |
+| `GET /sa/report/trans` | from/to=`2026091800`～`2026091823` / 起日反向 / from=`BADDATE00` / from=`00` | 最後一秒邊界 / 0 筆 / 格式錯誤仍送出 / 日期空白仍送出 |
+| `GET /sa/report/refund` | 起日=`20990101` / `20999999` / `20880101` / `20880201` | 0 筆 / 500 / 404 / query error（其他：兩筆退款） |
+| `GET /sa/report/reconDaily` | from=`20990101` / `20999999` / `20999888` | 0 筆 / 500 / 404（其他：R20260915 一致、R20260916 有差異） |
+| `GET /sa/report/reconMonthly` | from=`20990101` / `20999999` | 0 筆 / 500（其他：M202608 一筆） |
+| `GET /sa/report/reconDailyDetail` | reconId=`R20260916` / `R20260915` / `M202608` / `R5000000` / `R4040000` | 金額差異 / 0 筆 / 月批次 0 筆 / 500 / 404 |
+| `GET /sa/tos/query` | merchantID=`E000001` / `E000003` / `E000002` / `E500000` / `E999JSON` | v2 兩版次 / 含換行 v1 / `[]` / 500 / 非 JSON |
+| `POST /sa/tos/save` | merchantID=`E000002`；content 含 `FAIL`／單引號／空值；超長 merchantID；15 碼 startDate | version=1 / version=3 / FAIL 欄位長度、SQL 或 NULL |
+| `GET /getToS.jsp` | merchantID=`E000001` + version=`1`/`2`；`E000002`；不帶 merchantID/version | 指定版本 / 最新版本 / `NO ToS` / 全域預設條款 |
+| `GET /cp/bankacc/list` | merchantId=`E000001` / `E000002` / `E500000` / `E404000` / `E999JSON` | 兩筆帳戶 / `[]` / 500 / 404 / 非 JSON |
+| `POST /cp/bankacc/save` | bankCode=`999` / `777`(+USD,N) / `776`(+NTD,Y) / 空值 | FAIL 長度 / FOREIGN-USD / DOMESTIC-NTD / FAIL NULL |
+| `GET /csr/trans` | msisdn=`0900000000` / `0950000000` / `0910000010` / `0900000001` / `BADNUMBER` / 空值 / `090000000` | 零筆 / 500 / 11 筆但回傳 10 列 / query error / 格式錯誤空結果（預設：2 筆交易＋1 筆退款） |
 
 改 `mockoon/routes/*.json` 或 `bodies/` 後：
 

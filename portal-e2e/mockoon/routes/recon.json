@@ -1,0 +1,38 @@
+{
+  "description": "每日／每月對帳與差異明細後端情境",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "sa/report/reconDaily",
+      "documentation": "SRS 4.5 每日對帳彙總",
+      "responses": [
+        { "label": "一致與有差異資料（預設）", "default": true, "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "recon-daily-default.html", "example": { "query": { "from": "20000101", "to": "20991231" } } },
+        { "label": "查無每日彙總", "rules": [{ "target": "query", "key": "from", "operator": "equals", "value": "20990101" }], "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-empty.html", "example": { "query": { "from": "20990101" } } },
+        { "label": "後端 500", "rules": [{ "target": "query", "key": "from", "operator": "equals", "value": "20999999" }], "status": 500, "contentType": "text/plain;charset=UTF-8", "bodyFile": "backend-500.txt", "example": { "query": { "from": "20999999" } } },
+        { "label": "後端 404", "rules": [{ "target": "query", "key": "from", "operator": "equals", "value": "20999888" }], "status": 404, "contentType": "text/plain;charset=UTF-8", "bodyFile": "backend-404.txt", "example": { "query": { "from": "20999888" } } }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "sa/report/reconMonthly",
+      "documentation": "SRS 4.5 每月對帳彙總",
+      "responses": [
+        { "label": "每月彙總（預設）", "default": true, "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "recon-monthly-default.html", "example": { "query": { "from": "20000101", "to": "20991231" } } },
+        { "label": "查無每月彙總", "rules": [{ "target": "query", "key": "from", "operator": "equals", "value": "20990101" }], "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-empty.html", "example": { "query": { "from": "20990101" } } },
+        { "label": "後端 500", "rules": [{ "target": "query", "key": "from", "operator": "equals", "value": "20999999" }], "status": 500, "contentType": "text/plain;charset=UTF-8", "bodyFile": "backend-500.txt", "example": { "query": { "from": "20999999" } } }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "sa/report/reconDailyDetail",
+      "documentation": "SRS 4.5 每日對帳差異明細",
+      "responses": [
+        { "label": "無差異資料（預設）", "default": true, "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-empty.html", "example": { "query": { "reconId": "R20260915" } } },
+        { "label": "一筆金額差異", "rules": [{ "target": "query", "key": "reconId", "operator": "equals", "value": "R20260916" }], "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "recon-detail-diff.html", "example": { "query": { "reconId": "R20260916" } } },
+        { "label": "每月批次沒有每日差異明細", "rules": [{ "target": "query", "key": "reconId", "operator": "equals", "value": "M202608" }], "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-empty.html", "example": { "query": { "reconId": "M202608" } } },
+        { "label": "後端 500", "rules": [{ "target": "query", "key": "reconId", "operator": "equals", "value": "R5000000" }], "status": 500, "contentType": "text/plain;charset=UTF-8", "bodyFile": "backend-500.txt", "example": { "query": { "reconId": "R5000000" } } },
+        { "label": "後端 404", "rules": [{ "target": "query", "key": "reconId", "operator": "equals", "value": "R4040000" }], "status": 404, "contentType": "text/plain;charset=UTF-8", "bodyFile": "backend-404.txt", "example": { "query": { "reconId": "R4040000" } } }
+      ]
+    }
+  ]
+}

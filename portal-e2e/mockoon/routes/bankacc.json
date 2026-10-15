@@ -1,0 +1,29 @@
+{
+  "description": "商家銀行帳戶清單與註冊後端情境",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "cp/bankacc/list",
+      "documentation": "SRS 4.7 查詢商家銀行帳戶",
+      "responses": [
+        { "label": "兩筆帳戶（預設）", "default": true, "status": 200, "contentType": "application/json", "bodyFile": "bankacc-default.json", "example": { "query": { "merchantId": "E000001" } } },
+        { "label": "查無帳戶", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E000002" }], "status": 200, "contentType": "application/json", "bodyFile": "empty.json", "example": { "query": { "merchantId": "E000002" } } },
+        { "label": "後端 500", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E500000" }], "status": 500, "contentType": "text/plain;charset=UTF-8", "bodyFile": "backend-500.txt", "example": { "query": { "merchantId": "E500000" } } },
+        { "label": "後端 404", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E404000" }], "status": 404, "contentType": "text/plain;charset=UTF-8", "bodyFile": "backend-404.txt", "example": { "query": { "merchantId": "E404000" } } },
+        { "label": "非 JSON 回應", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E999JSON" }], "status": 200, "contentType": "text/plain;charset=UTF-8", "bodyFile": "bankacc-non-json.txt", "example": { "query": { "merchantId": "E999JSON" } } }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "cp/bankacc/save",
+      "documentation": "SRS 4.7 註冊商家銀行帳戶",
+      "responses": [
+        { "label": "註冊成功（預設）", "default": true, "status": 200, "contentType": "text/plain;charset=UTF-8", "bodyFile": "bankacc-save-ok.txt", "example": { "form": { "merchantId": "E000001", "bankCode": "007", "bankAcc": "1234567890123456", "currency": "NTD", "isDomestic": "Y" } } },
+        { "label": "欄位長度錯誤", "rules": [{ "target": "body", "key": "bankCode", "operator": "equals", "value": "999" }], "status": 200, "contentType": "text/plain;charset=UTF-8", "bodyFile": "save-fail-length.txt", "example": { "form": { "merchantId": "E000001", "bankCode": "999", "bankAcc": "1234567890123456", "currency": "NTD", "isDomestic": "Y" } } },
+        { "label": "外國銀行 USD 註冊成功", "rules": [{ "target": "body", "key": "bankCode", "operator": "equals", "value": "777" }], "status": 200, "contentType": "text/plain;charset=UTF-8", "bodyFile": "bankacc-save-foreign.txt", "example": { "form": { "merchantId": "E000001", "bankCode": "777", "bankAcc": "987654321", "currency": "USD", "isDomestic": "N" } } },
+        { "label": "國內銀行 NTD 註冊成功", "rules": [{ "target": "body", "key": "bankCode", "operator": "equals", "value": "776" }], "status": 200, "contentType": "text/plain;charset=UTF-8", "bodyFile": "bankacc-save-domestic.txt", "example": { "form": { "merchantId": "E000001", "bankCode": "776", "bankAcc": "123456789", "currency": "NTD", "isDomestic": "Y" } } },
+        { "label": "銀行代碼及帳號空白", "rules": [{ "target": "body", "key": "bankCode", "operator": "equals", "value": "" }, { "target": "body", "key": "bankAcc", "operator": "equals", "value": "" }], "rulesOperator": "AND", "status": 200, "contentType": "text/plain;charset=UTF-8", "bodyFile": "save-fail-null.txt", "example": { "form": { "merchantId": "E000001", "bankCode": "", "bankAcc": "", "currency": "NTD", "isDomestic": "Y" } } }
+      ]
+    }
+  ]
+}

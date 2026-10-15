@@ -1,0 +1,39 @@
+{
+  "description": "交易與退款報表後端情境",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "sa/report/trans",
+      "documentation": "SRS 4.3 交易報表查詢",
+      "responses": [
+        { "label": "有資料（預設）", "default": true, "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-trans-default.html", "example": { "query": { "from": "2026091600", "to": "2026091623", "merchantId": "E000001", "timeType": "tx" } } },
+        { "label": "未指定商家時查全部商家", "rules": [{ "target": "query", "key": "merchantId", "operator": "null" }], "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-trans-all.html", "example": { "query": { "from": "2026091600", "to": "2026091623" } } },
+        { "label": "查無資料", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E000002" }], "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-empty.html", "example": { "query": { "merchantId": "E000002" } } },
+        { "label": "後端 500", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E500000" }], "status": 500, "contentType": "text/plain;charset=UTF-8", "bodyFile": "backend-500.txt", "example": { "query": { "merchantId": "E500000" } } },
+        { "label": "後端 404", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E404000" }], "status": 404, "contentType": "text/plain;charset=UTF-8", "bodyFile": "backend-404.txt", "example": { "query": { "merchantId": "E404000" } } },
+        { "label": "查詢 SQL 錯誤", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E000SQL" }], "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-query-error.html", "example": { "query": { "merchantId": "E000SQL" } } },
+        { "label": "單引號查詢錯誤", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "'" }], "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-query-error.html", "example": { "query": { "merchantId": "'" } } },
+        { "label": "剛好 10 筆", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E010000" }], "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-trans-ten.html", "example": { "query": { "merchantId": "E010000" } } },
+        { "label": "11 筆但只顯示前 10 筆", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E011000" }], "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-trans-eleven-capped.html", "example": { "query": { "merchantId": "E011000" } } },
+        { "label": "未轉義 HTML 欄位值", "rules": [{ "target": "query", "key": "merchantId", "operator": "equals", "value": "E000BLD" }], "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-trans-unsafe.html", "example": { "query": { "merchantId": "E000BLD" } } },
+        { "label": "授權時間結果", "rules": [{ "target": "query", "key": "timeType", "operator": "equals", "value": "auth" }], "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-trans-auth.html", "example": { "query": { "timeType": "auth", "merchantId": "E000001" } } },
+        { "label": "包含當日最後一秒", "rules": [{ "target": "query", "key": "from", "operator": "equals", "value": "2026091800" }, { "target": "query", "key": "to", "operator": "equals", "value": "2026091823" }], "rulesOperator": "AND", "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-trans-boundary.html", "example": { "query": { "from": "2026091800", "to": "2026091823", "merchantId": "E000001" } } },
+        { "label": "起日晚於迄日", "rules": [{ "target": "query", "key": "from", "operator": "equals", "value": "2026091700" }, { "target": "query", "key": "to", "operator": "equals", "value": "2026091623" }], "rulesOperator": "AND", "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-empty.html", "example": { "query": { "from": "2026091700", "to": "2026091623", "merchantId": "E000001" } } },
+        { "label": "日期格式不符仍送出", "rules": [{ "target": "query", "key": "from", "operator": "equals", "value": "BADDATE00" }], "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-empty.html", "example": { "query": { "from": "BADDATE00", "merchantId": "E000001" } } },
+        { "label": "日期空白仍送出", "rules": [{ "target": "query", "key": "from", "operator": "equals", "value": "00" }], "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-trans-default.html", "example": { "query": { "from": "00", "merchantId": "E000001" } } }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "sa/report/refund",
+      "documentation": "SRS 4.4 退款報表查詢",
+      "responses": [
+        { "label": "退款資料（預設）", "default": true, "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "refund-default.html", "example": { "query": { "from": "2026091600", "to": "2026091623" } } },
+        { "label": "查無退款", "rules": [{ "target": "query", "key": "from", "operator": "equals", "value": "2099010100" }], "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-empty.html", "example": { "query": { "from": "2099010100" } } },
+        { "label": "後端 500", "rules": [{ "target": "query", "key": "from", "operator": "equals", "value": "2099999900" }], "status": 500, "contentType": "text/plain;charset=UTF-8", "bodyFile": "backend-500.txt", "example": { "query": { "from": "2099999900" } } },
+        { "label": "後端 404", "rules": [{ "target": "query", "key": "from", "operator": "equals", "value": "2088010100" }], "status": 404, "contentType": "text/plain;charset=UTF-8", "bodyFile": "backend-404.txt", "example": { "query": { "from": "2088010100" } } },
+        { "label": "退款查詢錯誤", "rules": [{ "target": "query", "key": "from", "operator": "equals", "value": "2088020100" }], "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-query-error.html", "example": { "query": { "from": "2088020100" } } }
+      ]
+    }
+  ]
+}
