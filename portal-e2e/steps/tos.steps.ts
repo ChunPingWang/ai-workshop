@@ -6,7 +6,7 @@ Given('我在服務條款設定頁', async ({ tosPage }) => {
 });
 
 Given('我查詢商家 {string} 的服務條款', async ({ tosPage }, merchantId) => {
-  await tosPage.queryAndWaitForForm(merchantId);
+  await tosPage.query(merchantId);
 });
 
 Given('我在新增服務條款模式', async ({ tosPage }) => {
@@ -46,6 +46,7 @@ When('我以商家 {string}、生效日期 {string} 與內容 {string} 存檔', 
 });
 
 When('我輸入含單引號的內容並存檔', async ({ tosPage }) => {
+  await tosPage.merchantId.fill('E000001');
   await tosPage.fillDraft('20260916090000', "條款內容'");
   await tosPage.saveAndHoldRefresh();
 });

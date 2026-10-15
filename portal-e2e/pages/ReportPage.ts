@@ -89,6 +89,16 @@ export class ReportPage extends BasePage {
     return this.rowCount(this.table);
   }
 
+  async expectTotalRows(total: string) {
+    await expect(this.result.locator('p').last()).toContainText(total);
+  }
+
+  async expectEmptyTable(total = 'total rows: 0') {
+    await expect(this.table).toHaveCount(1);
+    expect(await this.rows()).toBe(0);
+    await this.expectTotalRows(total);
+  }
+
   async expectSortedByColumn(table: Locator, columnIndex: number, direction: 'ascending' | 'descending' = 'ascending') {
     const rows = this.dataRows(table);
     const values: string[] = [];

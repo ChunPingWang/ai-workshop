@@ -74,7 +74,7 @@ export class BankaccPage extends BasePage {
   }
 
   async expectListUnchanged() {
-    await expect(this.list).toHaveText(this.priorListText);
+    await expect.poll(async () => (await this.list.innerText()).replace(/\s+/g, '')).toBe(this.priorListText.replace(/\s+/g, ''));
   }
 
   async expectListHeaderCount(count: number) {

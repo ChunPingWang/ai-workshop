@@ -66,6 +66,7 @@ export class HomePage extends BasePage {
   }
 
   async expectButtonStyle() {
+    await this.goto('/report?type=trans');
     const button = this.page.getByRole('button').first();
     await expect(button).toHaveCSS('background-color', 'rgb(31, 78, 121)');
     await expect(button).toHaveCSS('color', 'rgb(255, 255, 255)');

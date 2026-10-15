@@ -58,17 +58,17 @@ Then('商品名稱與商家資訊應顯示於交易結果', async ({ csrPage }) 
 });
 
 Then('交易表格與退款表格都應顯示 {string}', async ({ csrPage }, text) => {
-  await expect(csrPage.transactionTable).toContainText(text);
-  await expect(csrPage.refundTable).toContainText(text);
+  await csrPage.expectTransactionsTotal(text);
+  await csrPage.expectRefundsTotal(text);
 });
 
 Then('退款表格應顯示 {string}', async ({ csrPage }, text) => {
-  await expect(csrPage.refundTable).toContainText(text);
+  await csrPage.expectRefundsTotal(text);
 });
 
 Then('交易與退款結果都應顯示 {string}', async ({ csrPage }, text) => {
-  await expect(csrPage.transactionTable).toContainText(text);
-  await expect(csrPage.refundTable).toContainText(text);
+  await csrPage.expectTransactionsTotal(text);
+  await csrPage.expectRefundsTotal(text);
 });
 
 Then('兩張表格之間仍應顯示 {string}', async ({ csrPage }, text) => {

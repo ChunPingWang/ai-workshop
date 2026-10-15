@@ -47,4 +47,12 @@ export class CsrPage extends BasePage {
   async expectTableTotal(table: Locator, total: string) {
     await expect(table.locator('xpath=following-sibling::p[1]')).toContainText(total);
   }
+
+  async expectTransactionsTotal(total: string) {
+    await this.expectTableTotal(this.transactionTable, total);
+  }
+
+  async expectRefundsTotal(total: string) {
+    await this.expectTableTotal(this.refundTable, total);
+  }
 }

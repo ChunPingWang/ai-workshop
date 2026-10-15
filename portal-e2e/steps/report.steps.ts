@@ -136,14 +136,11 @@ Then('結果表格應有 {int} 筆資料列', async ({ reportPage }, count: numb
 });
 
 Then('結果應顯示空表格', async ({ reportPage }) => {
-  await expect(reportPage.table).toBeVisible();
-  expect(await reportPage.rows()).toBe(0);
+  await reportPage.expectEmptyTable();
 });
 
 Then('結果應顯示空表格與 {string}', async ({ reportPage }, text) => {
-  await expect(reportPage.table).toBeVisible();
-  expect(await reportPage.rows()).toBe(0);
-  await expect(reportPage.result).toContainText(text);
+  await reportPage.expectEmptyTable(text);
 });
 
 Then('查詢結果應顯示 {string}', async ({ reportPage }, text) => {

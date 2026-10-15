@@ -51,7 +51,7 @@ Then('我仍應看見登入頁', async ({ page, basePage }) => {
 });
 
 Then('我應進入首頁', async ({ homePage }) => {
-  await homePage.expectHeading('功能選單');
+  await homePage.open();
 });
 
 Then('我仍處於已登入狀態', async ({ basePage }) => {

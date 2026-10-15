@@ -24,6 +24,9 @@ export class LoginPage extends BasePage {
     await this.username.fill(username);
     await this.password.fill(password);
     await this.submitButton.click();
+    await expect(this.page).toHaveURL(/\/(?:;jsessionid=[^/?#]+)?$/);
+    await this.goto('/');
+    await expect(this.page.locator('h3')).toHaveText('功能選單');
     await expect(this.page.locator('.topbar')).toContainText(username);
   }
 

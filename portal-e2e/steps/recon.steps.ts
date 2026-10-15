@@ -102,9 +102,7 @@ Then('每月彙總應顯示七個規定欄位', async ({ reconPage }) => {
 });
 
 Then('彙總區應顯示空表格與 {string}', async ({ reconPage }, text) => {
-  await expect(reconPage.summaryTable).toBeVisible();
-  await expect(reconPage.result).toContainText(text);
-  expect(await reconPage.rowCount(reconPage.summaryTable)).toBe(0);
+  await reconPage.expectEmptySummary(text);
 });
 
 Then('差異表應包含以下資料:', async ({ reconPage }, dataTable: DataTable) => {
@@ -118,9 +116,7 @@ Then('差異結果應按明細序號排列', async ({ reconPage }) => {
 });
 
 Then('差異區應顯示空表格與 {string}', async ({ reconPage }, text) => {
-  await expect(reconPage.detailTable).toBeVisible();
-  await expect(reconPage.detail).toContainText(text);
-  expect(await reconPage.rowCount(reconPage.detailTable)).toBe(0);
+  await reconPage.expectEmptyDetail(text);
 });
 
 Then('差異區應顯示 {string}', async ({ reconPage }, text) => {

@@ -74,4 +74,16 @@ export class ReconPage extends BasePage {
   async expectSummaryColumnCount(count: number) {
     await expect(this.summaryTable.locator('th')).toHaveCount(count);
   }
+
+  async expectEmptySummary(total = 'total rows: 0') {
+    await expect(this.summaryTable).toHaveCount(1);
+    expect(await this.rowCount(this.summaryTable)).toBe(0);
+    await expect(this.result).toContainText(total);
+  }
+
+  async expectEmptyDetail(total = 'total rows: 0') {
+    await expect(this.detailTable).toHaveCount(1);
+    expect(await this.rowCount(this.detailTable)).toBe(0);
+    await expect(this.detail).toContainText(total);
+  }
 }
