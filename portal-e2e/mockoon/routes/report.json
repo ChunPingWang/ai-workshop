@@ -1,58 +1,20 @@
 {
-  "description": "交易報表與退款報表（report.html 共用；US-RPT-01〜03、US-RFD-01〜03／SRS 4.3、4.4）",
+  "description": "交易／退款報表（SRS 4.3、4.4）。目前只為 US-COM-01（登入與存取控制）提供登入後查詢有資料的預設回應。",
   "routes": [
     {
       "method": "GET",
       "path": "sa/report/trans",
-      "documentation": "SRS 4.3.4 交易報表；回應依序比對，第一個命中的 response 生效",
+      "documentation": "SRS 4.3 交易報表查詢",
       "responses": [
-        { "label": "商家含單引號 → query error", "rules": [ { "target": "query", "key": "merchantId", "operator": "regex", "value": "'" } ],
-          "status": 200, "bodyFile": "report-query-error.html", "example": { "query": { "from": "2026091600", "to": "2026091623", "merchantId": "E000'SQL" } } },
-        { "label": "查無資料（E000002）", "rules": [ { "target": "query", "key": "merchantId", "operator": "equals", "value": "E000002" } ],
-          "status": 200, "bodyFile": "report-empty.html" },
-        { "label": "商家代碼大小寫不符（e000001）→ 0 筆", "rules": [ { "target": "query", "key": "merchantId", "operator": "equals", "value": "e000001" } ],
-          "status": 200, "bodyFile": "report-empty.html" },
-        { "label": "後端 500（E500000）", "rules": [ { "target": "query", "key": "merchantId", "operator": "equals", "value": "E500000" } ],
-          "status": 500, "contentType": "application/json", "bodyFile": "backend-500.txt" },
-        { "label": "後端 404（E404000）", "rules": [ { "target": "query", "key": "merchantId", "operator": "equals", "value": "E404000" } ],
-          "status": 404, "contentType": "application/json", "bodyFile": "backend-404.txt" },
-        { "label": "剛好 10 筆（E010000）", "rules": [ { "target": "query", "key": "merchantId", "operator": "equals", "value": "E010000" } ],
-          "status": 200, "bodyFile": "report-trans-10.html" },
-        { "label": "11 筆、畫面 10 列（E011000）", "rules": [ { "target": "query", "key": "merchantId", "operator": "equals", "value": "E011000" } ],
-          "status": 200, "bodyFile": "report-trans-11.html" },
-        { "label": "欄位含 HTML 標記（E000BLD）", "rules": [ { "target": "query", "key": "merchantId", "operator": "equals", "value": "E000BLD" } ],
-          "status": 200, "bodyFile": "report-trans-bold.html" },
-        { "label": "未帶 merchantId（商家欄清空）→ 全部商家", "rules": [ { "target": "query", "key": "merchantId", "operator": "null" } ],
-          "status": 200, "bodyFile": "report-trans-all-merchants.html", "example": { "query": { "from": "2026091600", "to": "2026091623", "timeType": "tx" } } },
-        { "label": "日期欄清空（from=00、to=23）→ 全部日期", "rulesOperator": "AND",
-          "rules": [ { "target": "query", "key": "from", "operator": "equals", "value": "00" }, { "target": "query", "key": "to", "operator": "equals", "value": "23" } ],
-          "status": 200, "bodyFile": "report-trans-all-dates.html" },
-        { "label": "日期不是 8 碼（from 9 碼）→ 0 筆", "rules": [ { "target": "query", "key": "from", "operator": "regex", "value": "^\\d{9}$" } ],
-          "status": 200, "bodyFile": "report-empty.html", "example": { "query": { "from": "202609100", "to": "2026091623", "merchantId": "E000001", "timeType": "tx" } } },
-        { "label": "起日晚於迄日（20260917 → 20260916）→ 0 筆", "rulesOperator": "AND",
-          "rules": [ { "target": "query", "key": "from", "operator": "regex", "value": "^20260917" }, { "target": "query", "key": "to", "operator": "regex", "value": "^20260916" } ],
-          "status": 200, "bodyFile": "report-empty.html", "example": { "query": { "from": "2026091700", "to": "2026091623", "merchantId": "E000001", "timeType": "tx" } } },
-        { "label": "時間類型 auth → 授權時間報表", "rules": [ { "target": "query", "key": "timeType", "operator": "equals", "value": "auth" } ],
-          "status": 200, "bodyFile": "report-trans-auth.html" },
-        { "label": "9/16 00 時〜23 時整日區間（from/to 各 10 碼）", "rulesOperator": "AND",
-          "rules": [ { "target": "query", "key": "from", "operator": "equals", "value": "2026091600" }, { "target": "query", "key": "to", "operator": "equals", "value": "2026091623" } ],
-          "status": 200, "bodyFile": "report-trans-boundary.html" },
-        { "label": "有資料 3 筆（預設）", "default": true, "status": 200, "bodyFile": "report-trans-rows.html" }
+        { "label": "有資料 3 筆（預設）", "default": true, "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-trans-rows.html" }
       ]
     },
     {
       "method": "GET",
       "path": "sa/report/refund",
-      "documentation": "SRS 4.4.3 退款報表",
+      "documentation": "SRS 4.4 退款交易報表查詢",
       "responses": [
-        { "label": "查無資料（from 以 2099 開頭）", "rules": [ { "target": "query", "key": "from", "operator": "regex", "value": "^2099" } ],
-          "status": 200, "bodyFile": "report-empty.html", "example": { "query": { "from": "2099010100", "to": "2099010123" } } },
-        { "label": "後端 500（from 以 2095 開頭）", "rules": [ { "target": "query", "key": "from", "operator": "regex", "value": "^2095" } ],
-          "status": 500, "contentType": "application/json", "bodyFile": "backend-500.txt", "example": { "query": { "from": "2095010100", "to": "2095010123" } } },
-        { "label": "參數檢查：from 以 20260601 開頭且未帶 merchantId、timeType → TXCHECKOK", "rulesOperator": "AND",
-          "rules": [ { "target": "query", "key": "from", "operator": "regex", "value": "^20260601" }, { "target": "query", "key": "merchantId", "operator": "null" }, { "target": "query", "key": "timeType", "operator": "null" } ],
-          "status": 200, "bodyFile": "report-refund-check.html", "example": { "query": { "from": "2026060100", "to": "2026060123" } } },
-        { "label": "有資料 2 筆（預設）", "default": true, "status": 200, "bodyFile": "report-refund-rows.html" }
+        { "label": "有資料 2 筆（預設）", "default": true, "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "report-refund-rows.html" }
       ]
     }
   ]
