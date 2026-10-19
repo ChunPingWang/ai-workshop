@@ -33,7 +33,11 @@ type Fixtures = {
 };
 
 export const test = base.extend<Fixtures>({
-  portal: async ({ page, browser }, use) => use(new Portal(page, browser)),
+  portal: async ({ page, browser }, use) => {
+    const portal = new Portal(page, browser);
+    await use(portal);
+    await portal.dispose(); // 關掉「瀏覽器 A／B」情境另開的 context
+  },
   loginPage: async ({ portal }, use) => use(portal.login),
   indexPage: async ({ portal }, use) => use(portal.index),
   reportPage: async ({ portal }, use) => use(portal.report),

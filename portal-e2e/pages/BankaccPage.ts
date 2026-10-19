@@ -18,7 +18,7 @@ export class BankaccPage extends BasePage {
     註冊: { selector: '#btnSave', waitFor: /\/bankacc\/save/ },
     查詢已註冊帳戶: { selector: '#btnList', waitFor: /\/bankacc\/data/ },
   };
-  protected readonly areas: Record<string, string> = { 訊息區: '#msg', 帳戶清單區: '#list' };
+  protected readonly areas: Record<string, string> = { 訊息區: '#msg', 帳戶清單區: '#list', 帳戶清單: '#list' };
   protected readonly tables = { 帳戶清單: { selector: '#list table' } };
 
   constructor(page: Page) {
