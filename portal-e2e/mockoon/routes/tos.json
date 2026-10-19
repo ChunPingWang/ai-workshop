@@ -1,53 +1,20 @@
 {
-  "description": "服務條款設定（tos.html；US-TOS-01〜04／SRS 4.6）。Mockoon 無狀態：存檔不會改變查詢結果",
+  "description": "服務條款設定（SRS 4.6）。目前只為 US-COM-01 提供登入後查詢與存檔成功的預設回應。",
   "routes": [
     {
       "method": "GET",
       "path": "sa/tos/query",
-      "documentation": "SRS 4.6.4 查詢，JSON 陣列依 TOS_VERSION 降冪",
+      "documentation": "SRS 4.6 查詢商家服務條款（JSON 陣列，版次降冪）",
       "responses": [
-        { "label": "商家代碼含單引號 → 500（後端無 try/catch）", "rules": [ { "target": "query", "key": "merchantID", "operator": "regex", "value": "'" } ],
-          "status": 500, "contentType": "application/json", "bodyFile": "backend-500.txt", "example": { "query": { "merchantID": "E000'01" } } },
-        { "label": "E000001 → v2、v1 兩版次", "rules": [ { "target": "query", "key": "merchantID", "operator": "equals", "value": "E000001" } ],
-          "status": 200, "bodyFile": "tos-e000001.json" },
-        { "label": "E000003 → v1 內容含換行與 HTML 標記", "rules": [ { "target": "query", "key": "merchantID", "operator": "equals", "value": "E000003" } ],
-          "status": 200, "bodyFile": "tos-e000003.json" },
-        { "label": "後端 500（E500000）", "rules": [ { "target": "query", "key": "merchantID", "operator": "equals", "value": "E500000" } ],
-          "status": 500, "contentType": "application/json", "bodyFile": "backend-500.txt" },
-        { "label": "回非 JSON（E999JSON）", "rules": [ { "target": "query", "key": "merchantID", "operator": "equals", "value": "E999JSON" } ],
-          "status": 200, "bodyFile": "not-json.html" },
-        { "label": "尚無條款 []（預設）", "default": true, "status": 200, "bodyFile": "tos-empty.json" }
+        { "label": "已有 v2、v1 兩版次（預設）", "default": true, "status": 200, "contentType": "application/json", "bodyFile": "tos-e000001.json" }
       ]
     },
     {
       "method": "POST",
       "path": "sa/tos/save",
-      "documentation": "SRS 4.6.4 存檔（form：merchantID、startDate、content、note）",
+      "documentation": "SRS 4.6 存檔服務條款（Mockoon 無狀態：存檔回 version=3，重查仍回 v2）",
       "responses": [
-        { "label": "後端 500（merchantID=E500000）", "rules": [ { "target": "body", "key": "merchantID", "operator": "equals", "value": "E500000" } ],
-          "status": 500, "contentType": "application/json", "bodyFile": "backend-500.txt",
-          "example": { "form": { "merchantID": "E500000", "startDate": "20261001000000", "content": "x", "note": "" } } },
-        { "label": "生效日期或內容空白 → FAIL NULL not allowed",
-          "rules": [ { "target": "body", "key": "startDate", "operator": "regex", "value": "^$" }, { "target": "body", "key": "content", "operator": "regex", "value": "^$" } ],
-          "status": 200, "contentType": "text/plain;charset=UTF-8",
-          "body": "FAIL StatementCallback; NULL not allowed for column \"TOS_CONTENT\"; SQL statement: INSERT INTO MWP_OLS_TOS ...",
-          "example": { "form": { "merchantID": "E000002", "startDate": "20261001000000", "content": "", "note": "" } } },
-        { "label": "內容含單引號 → FAIL Syntax error", "rules": [ { "target": "body", "key": "content", "operator": "regex", "value": "'" } ],
-          "status": 200, "contentType": "text/plain;charset=UTF-8",
-          "body": "FAIL StatementCallback; bad SQL grammar; Syntax error in SQL statement \"INSERT INTO MWP_OLS_TOS ...\"",
-          "example": { "form": { "merchantID": "E000002", "startDate": "20261001000000", "content": "It's", "note": "" } } },
-        { "label": "生效日期超過 14 碼或商家代碼超過 10 碼 → FAIL Value too long",
-          "rules": [ { "target": "body", "key": "startDate", "operator": "regex", "value": "^.{15,}$" }, { "target": "body", "key": "merchantID", "operator": "regex", "value": "^.{11,}$" } ],
-          "status": 200, "contentType": "text/plain;charset=UTF-8",
-          "body": "FAIL StatementCallback; Value too long for column \"TOS_START_DATE VARCHAR2(14)\"",
-          "example": { "form": { "merchantID": "E000002", "startDate": "202610010000001", "content": "x", "note": "" } } },
-        { "label": "E000001 已有 v2 → OK version=3", "rules": [ { "target": "body", "key": "merchantID", "operator": "equals", "value": "E000001" } ],
-          "status": 200, "contentType": "text/plain;charset=UTF-8",
-          "body": "OK version=3 url=http://localhost:8099/getToS.jsp?merchantID=E000001&version=3",
-          "example": { "form": { "merchantID": "E000001", "startDate": "20261001000000", "content": "v3", "note": "" } } },
-        { "label": "其他商家第一版 → OK version=1（預設）", "default": true, "status": 200, "contentType": "text/plain;charset=UTF-8",
-          "body": "OK version=1 url=http://localhost:8099/getToS.jsp?merchantID=E000002&version=1",
-          "example": { "form": { "merchantID": "E000002", "startDate": "20261001000000", "content": "v1", "note": "" } } }
+        { "label": "存檔成功 version=3（預設）", "default": true, "status": 200, "contentType": "text/plain;charset=UTF-8", "body": "OK version=3 url=http://localhost:8099/getToS.jsp?merchantID=E000001&version=3" }
       ]
     }
   ]

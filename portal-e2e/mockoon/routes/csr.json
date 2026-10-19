@@ -1,24 +1,12 @@
 {
-  "description": "CSR 交易查詢（csr.html；US-CSR-01〜03／SRS 4.8）",
+  "description": "CSR 交易查詢（SRS 4.8）。目前只為 US-COM-01 提供登入後查詢有資料的預設回應。",
   "routes": [
     {
       "method": "GET",
       "path": "csr/trans",
-      "documentation": "SRS 4.8.4 交易表格 + <hr/>Refunds: + 退款表格",
+      "documentation": "SRS 4.8 依門號查交易與退款（兩張表以 <hr/>Refunds: 相接）",
       "responses": [
-        { "label": "門號含單引號 → 兩段 query error", "rules": [ { "target": "query", "key": "msisdn", "operator": "regex", "value": "'" } ],
-          "status": 200, "bodyFile": "csr-query-error.html", "example": { "query": { "msisdn": "09'123" } } },
-        { "label": "查無資料（0900000000）", "rules": [ { "target": "query", "key": "msisdn", "operator": "equals", "value": "0900000000" } ],
-          "status": 200, "bodyFile": "csr-empty.html" },
-        { "label": "後端 500（0950000000）", "rules": [ { "target": "query", "key": "msisdn", "operator": "equals", "value": "0950000000" } ],
-          "status": 500, "contentType": "application/json", "bodyFile": "backend-500.txt" },
-        { "label": "11 筆交易、畫面 10 列（0910000010）", "rules": [ { "target": "query", "key": "msisdn", "operator": "equals", "value": "0910000010" } ],
-          "status": 200, "bodyFile": "csr-11.html" },
-        { "label": "有交易無退款（0922222222）", "rules": [ { "target": "query", "key": "msisdn", "operator": "equals", "value": "0922222222" } ],
-          "status": 200, "bodyFile": "csr-no-refund.html" },
-        { "label": "門號空白或不是 10 碼數字 → 0 筆", "rules": [ { "target": "query", "key": "msisdn", "operator": "regex", "value": "^(?!\\d{10}$)" } ],
-          "status": 200, "bodyFile": "csr-empty.html", "example": { "query": { "msisdn": "09123" } } },
-        { "label": "2 筆交易＋1 筆退款（預設）", "default": true, "status": 200, "bodyFile": "csr-rows.html" }
+        { "label": "2 筆交易＋1 筆退款（預設）", "default": true, "status": 200, "contentType": "text/html;charset=UTF-8", "bodyFile": "csr-rows.html" }
       ]
     }
   ]
