@@ -10,7 +10,7 @@ export class CsrPage extends BasePage {
   protected readonly buttons: Record<string, ButtonSpec> = {
     查詢: { selector: '#btnQuery', waitFor: /\/csr\/data/ },
   };
-  protected readonly areas: Record<string, string> = { 結果區: '#result' };
+  protected readonly areas: Record<string, string> = { 結果區: '#result', 查詢結果區: '#result' };
   protected readonly tables = {
     結果表格: { selector: '#result table' },
     交易表格: { selector: '#result table', nth: 0 },

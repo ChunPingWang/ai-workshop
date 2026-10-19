@@ -19,7 +19,7 @@ export class ReportPage extends BasePage {
   protected readonly buttons: Record<string, ButtonSpec> = {
     查詢: { selector: '#btnQuery', waitFor: /\/report\/data/ },
   };
-  protected readonly areas: Record<string, string> = { 結果區: '#result' };
+  protected readonly areas: Record<string, string> = { 結果區: '#result', 查詢結果區: '#result' };
   protected readonly tables = { 結果表格: { selector: '#result table' } };
 
   constructor(page: Page) {

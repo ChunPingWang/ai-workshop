@@ -1,4 +1,4 @@
-import { Browser, Locator, Page, Response, expect } from '@playwright/test';
+import { Browser, BrowserContext, Locator, Page, Response, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { LoginPage } from './LoginPage';
 import { IndexPage } from './IndexPage';
@@ -18,6 +18,9 @@ export const PAGE_PATHS: Record<string, string> = {
   銀行帳戶: '/bankacc',
   CSR查詢: '/csr',
 };
+
+/** 登入頁網址：首次 redirect 會帶 ;jsessionid=，登入失敗停在 /doLogin（README「已知地雷」） */
+export const LOGIN_URL = /\/(login|doLogin)(;jsessionid=[^/?#]+)?$/;
 
 /** Portal 的 ajax 資料端點（瀏覽器 → Portal） */
 const DATA_ENDPOINT = /\/(report\/data|recon\/data|recon\/detail|csr\/data|tos\/data|tos\/save|bankacc\/data|bankacc\/save)(\?|$)/;
@@ -99,6 +102,8 @@ export class Portal {
     const spec = cur.buttonSpec(label);
     const btn = cur.button(label);
     if (label === '存檔') this.lastSaveAt = Date.now();
+    // tos 存檔後會自動重查並清空 #msg（README「已知地雷」）：延遲存檔後那一次重查，讓存檔訊息看得到
+    if (cur === this.tos && label === '存檔') await this.delayNextTosRequery();
     if (spec.navigation) {
       await btn.click();
       await this.page.waitForLoadState();
@@ -144,6 +149,60 @@ export class Portal {
     await expect
       .poll(() => this.dataResponses.some((r) => endpoint.test(r.url) && r.at >= this.lastSaveAt), { timeout: 15_000 })
       .toBe(true);
+  }
+
+  /** 只延遲下一次 /tos/data（存檔後的自動重查），其餘請求不受影響 */
+  async delayNextTosRequery(ms = 2_000) {
+    await this.page.route(
+      /\/tos\/data(\?|$)/,
+      async (route) => {
+        await new Promise((r) => setTimeout(r, ms));
+        await route.continue().catch(() => {
+          /* 測試已結束、頁面已關閉 */
+        });
+      },
+      { times: 1 },
+    );
+  }
+
+  /** 在同一個瀏覽器（共用 cookie）另開分頁按登出，原分頁保持開著 */
+  async logoutInAnotherTab() {
+    const tab = await this.page.context().newPage();
+    await tab.goto('/logout');
+    await expect(tab).toHaveURL(LOGIN_URL);
+    await tab.close();
+  }
+
+  /** 以名稱區分的其他獨立瀏覽器（各自的 context／cookie），測試結束時由 dispose() 關閉 */
+  private readonly named = new Map<string, { ctx: BrowserContext; portal: Portal }>();
+
+  /** 取得（必要時建立）名為 name 的獨立瀏覽器 */
+  async inBrowser(name: string, baseURL: string): Promise<Portal> {
+    let entry = this.named.get(name);
+    if (!entry) {
+      const ctx = await this.browser.newContext({ baseURL, locale: 'zh-TW', timezoneId: 'Asia/Taipei' });
+      entry = { ctx, portal: new Portal(await ctx.newPage(), this.browser) };
+      this.named.set(name, entry);
+    }
+    return entry.portal;
+  }
+
+  /** 已建立的具名瀏覽器（沒建立過就丟錯，避免 Then 步驟意外建立新瀏覽器） */
+  browserNamed(name: string): Portal {
+    const entry = this.named.get(name);
+    if (!entry) throw new Error(`尚未開啟瀏覽器「${name}」`);
+    return entry.portal;
+  }
+
+  async dispose() {
+    for (const { ctx } of this.named.values()) await ctx.close();
+    this.named.clear();
+  }
+
+  /** 目前網址的 pathname + search（去掉 ;jsessionid=） */
+  currentPath(): string {
+    const u = new URL(this.page.url());
+    return u.pathname.replace(/;jsessionid=.*$/i, '') + u.search;
   }
 
   /** 取元素計算後的樣式 */

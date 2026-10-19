@@ -17,7 +17,12 @@ export class ReconPage extends BasePage {
     查詢: { selector: '#btnQuery', waitFor: /\/recon\/data/ },
     查差異明細: { selector: '#btnDetail', waitFor: /\/recon\/detail/ },
   };
-  protected readonly areas: Record<string, string> = { 結果區: '#result', 明細區: '#detail' };
+  protected readonly areas: Record<string, string> = {
+    結果區: '#result',
+    查詢結果區: '#result',
+    明細區: '#detail',
+    差異明細區: '#detail',
+  };
   protected readonly tables = {
     結果表格: { selector: '#result table' },
     明細表格: { selector: '#detail table' },

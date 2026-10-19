@@ -1,3 +1,4 @@
+
 @login
 Feature: 登入後才能使用 Portal 功能 (US-COM-01, SRS 3.1)
   身為 Portal 使用者，

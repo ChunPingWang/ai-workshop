@@ -25,7 +25,7 @@ export class TosPage extends BasePage {
     建立新版次: { selector: '#btnNewVer' },
     存檔: { selector: '#btnSave', waitFor: /\/tos\/save/ },
   };
-  protected readonly areas: Record<string, string> = { 訊息區: '#msg' };
+  protected readonly areas: Record<string, string> = { 訊息區: '#msg', 服務條款版次: '#verShow' };
 
   constructor(page: Page) {
     super(page);
